@@ -4324,11 +4324,10 @@ export function App() {
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
           </button>
-          <button className="mobile-nav-btn mobile-nav-center" onClick={mobileSaveAndBack}>
-            <Save size={22} strokeWidth={2} />
+          <button className="mobile-nav-btn" onClick={mobileSaveAndBack}>
+            <Save size={20} strokeWidth={2} />
             <span>保存</span>
           </button>
-          <div style={{ width: 48 }} />
         </nav>
 
       </section>

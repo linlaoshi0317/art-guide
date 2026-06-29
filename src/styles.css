@@ -5085,7 +5085,8 @@ button {
     background: #fff;
     border-top: 1px solid var(--border);
     padding: 6px 0 env(safe-area-inset-bottom, 10px);
-    justify-content: space-around;
+    justify-content: space-evenly;
+    gap: 0;
   }
   .mobile-nav-btn {
     display: flex;
@@ -5100,14 +5101,6 @@ button {
     cursor: pointer;
   }
   .mobile-nav-btn:active { color: var(--accent); }
-  .mobile-nav-center {
-    background: var(--accent) !important;
-    color: #fff !important;
-    border-radius: 50px !important;
-    padding: 8px 20px !important;
-    margin-top: -16px !important;
-    box-shadow: 0 4px 14px rgba(224,123,57,.4);
-  }
 
   .mobile-nav {
     transition: transform 0.3s ease;
