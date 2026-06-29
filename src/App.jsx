@@ -4245,9 +4245,9 @@ export function App() {
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
           </button>
-          <button className="mobile-nav-btn mobile-nav-center" onClick={openReport}>
+          <button className="mobile-nav-btn mobile-nav-center" onClick={() => { handleSave(); if (!userLoggedIn) { setAuthMode("login"); setShowAuthModal(true); } }}>
             <Save size={22} strokeWidth={2} />
-            <span>保存测评</span>
+            <span>保存</span>
           </button>
           {userLoggedIn ? (
             <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>
