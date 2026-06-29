@@ -2425,6 +2425,21 @@ export function App() {
     }
   }
 
+  // 手机端一键保存并返回主页
+  async function mobileSaveAndBack() {
+    if (!userLoggedIn) { setAuthMode("login"); setShowAuthModal(true); return; }
+    setShowReport(true);
+    // 等待报告渲染
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      await handleSaveReportImage();
+    } catch(e) {
+      // 如果保存失败，至少关闭并返回
+    }
+    setShowReport(false);
+    setActiveTab("analysis");
+  }
+
   async function handleExtractFigures() {
     setExtractingStatus("loading");
     setExtractingError("");
@@ -4257,7 +4272,7 @@ export function App() {
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
           </button>
-          <button className="mobile-nav-btn mobile-nav-center" onClick={openReport}>
+          <button className="mobile-nav-btn mobile-nav-center" onClick={mobileSaveAndBack}>
             <Save size={22} strokeWidth={2} />
             <span>保存</span>
           </button>
