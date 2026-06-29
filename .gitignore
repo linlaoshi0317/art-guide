@@ -3,3 +3,6 @@ node_modules/
 *.log
 data/
 nul
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.npm-cache
