@@ -1816,12 +1816,11 @@ export function App() {
   }
 
   function useCredit() {
-    if (freeMode) return true; // 免费模式无限用
     if (!authToken) {
       setShowAuthModal(true);
       return false;
     }
-    if (credits <= 0) {
+    if (!freeMode && credits <= 0) {
       openRecharge();
       return false;
     }

@@ -178,7 +178,6 @@ function getAuthToken(request) {
 }
 
 function requireAuth(request) {
-  if (FREE_MODE) return { userId: "free_user", email: "free@local" }; // 免费模式免登录
   const token = getAuthToken(request);
   if (!token) return null;
   const payload = verifyJWT(token);
