@@ -4241,13 +4241,13 @@ export function App() {
         </div>{/* app-layout */}
         {/* ── 手机端底部导航 ── */}
         <nav className="mobile-nav">
-          <button className="mobile-nav-btn" onClick={() => { setActiveTab("analysis"); }}>
-            <Search size={20} strokeWidth={2} />
-            <span>分析</span>
-          </button>
           <button className="mobile-nav-btn" onClick={() => { setActiveTab("records"); loadRecords(); }}>
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
+          </button>
+          <button className="mobile-nav-btn mobile-nav-center" onClick={openReport}>
+            <Save size={22} strokeWidth={2} />
+            <span>保存测评</span>
           </button>
           {userLoggedIn ? (
             <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>

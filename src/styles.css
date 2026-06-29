@@ -4958,6 +4958,36 @@ button {
   .mobile-nav-btn:active {
     color: var(--accent);
   }
+
+  .mobile-nav-center {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-radius: 50px !important;
+    padding: 8px 20px !important;
+    margin-top: -16px !important;
+    box-shadow: 0 4px 14px rgba(224,123,57,.4);
+  }
+
+  /* 移动端内容区域增加间距 */
+  .strength-card .section-heading,
+  .report-section,
+  .strength-formula,
+  .strength-perspectives {
+    padding: 14px 12px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .report-section h3,
+  .strength-card h3 {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .report-section p,
+  .report-desc {
+    font-size: 14px !important;
+    line-height: 1.8 !important;
+  }
 }
 
 @media (min-width: 861px) {
