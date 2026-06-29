@@ -3763,16 +3763,6 @@ export function App() {
                 <div className="settings-body">
                   <div className="settings-group">
                     <label className="settings-item">
-                      <span>侧边栏默认状态</span>
-                      <select
-                        value={sidebarCollapsed ? "collapsed" : "expanded"}
-                        onChange={(e) => setSidebarCollapsed(e.target.value === "collapsed")}
-                      >
-                        <option value="collapsed">折叠（仅图标）</option>
-                        <option value="expanded">展开（图标 + 文字）</option>
-                      </select>
-                    </label>
-                    <label className="settings-item">
                       <span>账户状态</span>
                       <span className="settings-value">{userLoggedIn ? `已登录 · ${authUser?.email || ""}` : "未登录"}</span>
                     </label>
