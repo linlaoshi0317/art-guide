@@ -6,80 +6,47 @@ $g = [System.Drawing.Graphics]::FromImage($bmp)
 $g.SmoothingMode = 'HighQuality'
 
 # 橙色渐变背景
-$b1 = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-    (New-Object System.Drawing.Point(0,0)),
-    (New-Object System.Drawing.Point($sz,$sz)),
-    [System.Drawing.Color]::FromArgb(255, 245, 130, 50),
-    [System.Drawing.Color]::FromArgb(255, 220, 100, 40)
-)
-$g.FillRectangle($b1, 0, 0, $sz, $sz)
+$brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+    [Drawing.Point]::new(0,0), [Drawing.Point]::new($sz,$sz),
+    [Drawing.Color]::OrangeRed, [Drawing.Color]::DarkOrange)
+$g.FillRectangle($brush, 0, 0, $sz, $sz)
+$brush.Dispose()
 
-# 铅笔主体
-$pencil = New-Object System.Drawing.Drawing2D.GraphicsPath
-$cx = 256; $cy = 220
-# 铅笔杆
-$pencil.AddPolygon(@(
-    $cx-50, $cy+80,
-    $cx+50, $cy+80,
-    $cx+50, $cy-140,
-    $cx-50, $cy-140
-))
-# 笔尖
-$pencil.AddPolygon(@(
-    $cx-50, $cy+80,
-    $cx+50, $cy+80,
-    $cx, $cy+200
-))
+# 铅笔杆 - 金黄色
+$g.FillRectangle((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,255,215,0))), 208, 80, 96, 220)
 
-# 画铅笔杆 - 黄色
-$penB = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 255, 215, 0))
-$g.FillRectangle($penB, $cx-48, $cy-140, 96, 220)
+# 条纹
+$s = New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,184,134,11))
+$g.FillRectangle($s, 208, 120, 96, 10)
+$g.FillRectangle($s, 208, 170, 96, 10)
+$g.FillRectangle($s, 208, 220, 96, 10)
+$s.Dispose()
 
-# 铅笔条纹装饰
-$stripe = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 255, 180, 0))
-$g.FillRectangle($stripe, $cx-48, $cy-100, 96, 12)
-$g.FillRectangle($stripe, $cx-48, $cy-50, 96, 12)
-$g.FillRectangle($stripe, $cx-48, $cy, 96, 12)
+# 橡皮头
+$g.FillRectangle((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,255,182,193))), 208, 10, 96, 35)
 
-# 铅笔橡皮头 - 粉色
-$eraser = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 255, 180, 180))
-$g.FillRectangle($eraser, $cx-48, $cy-170, 96, 35)
+# 金属箍
+$g.FillRectangle((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,192,192,192))), 208, 80, 96, 8)
 
-# 橡皮头金属箍
-$metal = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 200, 200, 200))
-$g.FillRectangle($metal, $cx-48, $cy-140, 96, 8)
+# 笔尖木头
+$pts = [Drawing.Point[]]@([Drawing.Point]::new(208,295),[Drawing.Point]::new(304,295),[Drawing.Point]::new(256,405))
+$g.FillPolygon((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,222,184,135))), $pts)
 
-# 笔尖 - 木色
-$tip = @($cx-48, $cy+75, $cx+48, $cy+75, $cx, $cy+185)
-$tipBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 240, 200, 150))
-$g.FillPolygon($tipBrush, $tip)
+# 石墨
+$pts2 = [Drawing.Point[]]@([Drawing.Point]::new(248,320),[Drawing.Point]::new(264,320),[Drawing.Point]::new(256,405))
+$g.FillPolygon((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(255,50,50,50))), $pts2)
 
-# 笔尖石墨
-$lead = @($cx-8, $cy+100, $cx+8, $cy+100, $cx, $cy+185)
-$leadBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 50, 50, 50))
-$g.FillPolygon($leadBrush, $lead)
-
-# 白色高光条
-$highlight = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(80, 255, 255, 255))
-$g.FillRectangle($highlight, $cx-30, $cy-130, 16, 190)
+# 高光
+$g.FillRectangle((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(80,255,255,255))), 228, 90, 14, 190)
 
 $g.Dispose()
 
-$baseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-
-# 512x512
-$bmp.Save("$baseDir\public\logo-512.png", [System.Drawing.Imaging.ImageFormat]::Png)
-
-# 192x192
-$bmp192 = New-Object System.Drawing.Bitmap($bmp, 192, 192)
-$bmp192.Save("$baseDir\public\logo-192.png", [System.Drawing.Imaging.ImageFormat]::Png)
-
-# 180x180 apple
-$bmp180 = New-Object System.Drawing.Bitmap($bmp, 180, 180)
-$bmp180.Save("$baseDir\public\apple-icon.png", [System.Drawing.Imaging.ImageFormat]::Png)
-
-# icon-192
-$bmp192.Save("$baseDir\public\icon-192.png", [System.Drawing.Imaging.ImageFormat]::Png)
-
+$dir = 'C:\Users\蔺先生\Documents\提升孩子作品审美的技能skill\ios-art-guide-prototype\public'
+$bmp.Save("$dir\icon-192.png", [Drawing.Imaging.ImageFormat]::Png)
+$bmp.Save("$dir\icon-512.png", [Drawing.Imaging.ImageFormat]::Png)
+$bmp.Save("$dir\apple-icon.png", [Drawing.Imaging.ImageFormat]::Png)
+$bmp192 = New-Object Drawing.Bitmap($bmp, 192, 192)
+$bmp192.Save("$dir\logo-192.png", [Drawing.Imaging.ImageFormat]::Png)
+$bmp192.Dispose()
 $bmp.Dispose()
-Write-Host 'Pencil logo generated!'
+Write-Host 'OK'
