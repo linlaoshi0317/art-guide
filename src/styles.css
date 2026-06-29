@@ -5108,6 +5108,14 @@ button {
     margin-top: -16px !important;
     box-shadow: 0 4px 14px rgba(224,123,57,.4);
   }
+
+  .mobile-nav {
+    transition: transform 0.3s ease;
+  }
+  .nav-hidden {
+    transform: translateY(100%);
+  }
+
   /* 测评报告按钮 */
   .report-actions {
     display: flex;

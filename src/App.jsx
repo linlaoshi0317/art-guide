@@ -1685,6 +1685,7 @@ export function App() {
   const [unitPrice, setUnitPrice] = useState(0.39); // 积分单价，从服务端获取
   const [freeMode, setFreeMode] = useState(true);   // 默认免费模式
   const [activeTab, setActiveTab] = useState("analysis"); // "analysis" | "records"
+  const [navHidden, setNavHidden] = useState(false);        // 底部导航隐藏
 
   // 打开充值弹窗时获取最新单价
   function openRecharge() {
@@ -1762,6 +1763,32 @@ export function App() {
       if (d.freeMode) setFreeMode(true);
       if (d.unitPrice) setUnitPrice(d.unitPrice);
     }).catch(() => {});
+    // 预加载 html2canvas 加速保存
+    if (!window.html2canvas) {
+      const s = document.createElement("script");
+      s.src = "https://registry.npmmirror.com/html2canvas/1.4.1/files/dist/html2canvas.min.js";
+      document.head.appendChild(s);
+    }
+  }, []);
+
+  // 滚动隐藏/显示底部导航
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const dy = window.scrollY - lastY;
+          if (dy > 30) setNavHidden(true);
+          else if (dy < -10) setNavHidden(false);
+          lastY = window.scrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   async function handleAuthSubmit(email, password, inviteCode = "") {
@@ -4234,6 +4261,16 @@ export function App() {
             📋 记录
             {records.length > 0 && <span className="tab-badge">{records.length}</span>}
           </button>
+          <div style={{ flex: 1 }} />
+          {userLoggedIn ? (
+            <span style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 8px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {authUser?.email || ""}
+            </span>
+          ) : (
+            <button className="tab-btn" onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}>
+              👤 登录
+            </button>
+          )}
         </div>
 
         <div className="content upload-layout" style={{ display: activeTab === "analysis" ? "block" : "none" }}>
@@ -4271,7 +4308,7 @@ export function App() {
           </div>{/* main-area */}
         </div>{/* app-layout */}
         {/* ── 手机端底部导航 ── */}
-        <nav className="mobile-nav">
+        <nav className={`mobile-nav ${navHidden ? "nav-hidden" : ""}`}>
           <button className="mobile-nav-btn" onClick={() => { setActiveTab("records"); loadRecords(); }}>
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
@@ -4280,17 +4317,10 @@ export function App() {
             <Save size={22} strokeWidth={2} />
             <span>保存</span>
           </button>
-          {userLoggedIn ? (
-            <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>
-              <Settings size={20} strokeWidth={2} />
-              <span>设置</span>
-            </button>
-          ) : (
-            <button className="mobile-nav-btn" onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}>
-              <LogIn size={20} strokeWidth={2} />
-              <span>登录</span>
-            </button>
-          )}
+          <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>
+            <Settings size={20} strokeWidth={2} />
+            <span>设置</span>
+          </button>
         </nav>
 
       </section>
