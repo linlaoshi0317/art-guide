@@ -4913,7 +4913,7 @@ button {
   }
 }
 
-/* 手机端隐藏侧边栏，改为顶部导航 */
+/* ── 手机端全面优化 ── */
 @media (max-width: 860px) {
   .sidebar {
     display: none !important;
@@ -4922,8 +4922,95 @@ button {
     flex-direction: column;
   }
   .content {
-    padding: 16px 12px !important;
-    padding-bottom: 80px !important;
+    padding: 12px 10px 90px !important;
+  }
+
+  /* 主内容区呼吸感 */
+  .hero {
+    padding: 24px 16px 14px !important;
+  }
+  .hero-title {
+    font-size: 20px !important;
+    line-height: 1.4 !important;
+  }
+  .hero-desc {
+    font-size: 14px !important;
+    margin-top: 6px !important;
+  }
+
+  /* 上传区域 */
+  .upload-area {
+    padding: 18px 14px !important;
+  }
+
+  /* 所有卡片增加内边距 */
+  .strength-card,
+  .upload-flow {
+    padding: 14px 10px !important;
+  }
+
+  .section-heading {
+    margin-bottom: 12px !important;
+  }
+  .section-heading h2 {
+    font-size: 17px !important;
+  }
+
+  /* 天赋识别等板块 */
+  .strength-formula,
+  .strength-perspectives,
+  .projection-grid,
+  .report-section {
+    padding: 16px 14px !important;
+    margin-bottom: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .report-section h3,
+  .strength-card h3,
+  .strength-formula h3 {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .report-section p,
+  .report-desc,
+  .strength-card p,
+  .strength-formula p {
+    font-size: 15px !important;
+    line-height: 1.85 !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* 优化图结果网格 */
+  .guidance-options-grid,
+  .result-compare-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* 生成历史卡片 */
+  .record-item {
+    padding: 14px 12px !important;
+  }
+
+  /* 标签导航 */
+  .tab-nav {
+    padding: 10px 8px 0 !important;
+    gap: 6px !important;
+  }
+  .tab-btn {
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+  }
+
+  /* 弹窗适配 */
+  .settings-modal,
+  .report-modal {
+    width: calc(100vw - 24px) !important;
+    max-width: 100% !important;
+    margin: 12px !important;
+    border-radius: 16px !important;
   }
 }
 
@@ -4941,7 +5028,6 @@ button {
     padding: 6px 0 env(safe-area-inset-bottom, 10px);
     justify-content: space-around;
   }
-
   .mobile-nav-btn {
     display: flex;
     flex-direction: column;
@@ -4954,11 +5040,7 @@ button {
     font-size: 11px;
     cursor: pointer;
   }
-
-  .mobile-nav-btn:active {
-    color: var(--accent);
-  }
-
+  .mobile-nav-btn:active { color: var(--accent); }
   .mobile-nav-center {
     background: var(--accent) !important;
     color: #fff !important;
@@ -4967,31 +5049,8 @@ button {
     margin-top: -16px !important;
     box-shadow: 0 4px 14px rgba(224,123,57,.4);
   }
-
-  /* 移动端内容区域增加间距 */
-  .strength-card .section-heading,
-  .report-section,
-  .strength-formula,
-  .strength-perspectives {
-    padding: 14px 12px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .report-section h3,
-  .strength-card h3 {
-    font-size: 16px !important;
-    margin-bottom: 8px !important;
-  }
-
-  .report-section p,
-  .report-desc {
-    font-size: 14px !important;
-    line-height: 1.8 !important;
-  }
 }
 
 @media (min-width: 861px) {
-  .mobile-nav {
-    display: none;
-  }
+  .mobile-nav { display: none; }
 }
