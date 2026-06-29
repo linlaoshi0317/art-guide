@@ -3392,6 +3392,18 @@ button {
   animation: fadeIn 0.2s ease-out;
 }
 
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease-out;
+}
+
 .settings-modal {
   width: 100%;
   max-width: 400px;
@@ -5024,18 +5036,31 @@ button {
     font-size: 14px !important;
   }
 
-  /* 弹窗适配 */
+  /* ── 所有弹窗居中适配 ── */
+  .settings-overlay,
+  .report-overlay {
+    padding: 16px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
   .settings-modal,
   .report-modal {
-    width: calc(100vw - 24px) !important;
-    max-width: 100% !important;
-    margin: 12px !important;
-    border-radius: 16px !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 420px !important;
+    margin: 0 auto !important;
+    border-radius: 18px !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
   }
 
   /* 预览弹窗居中 */
   .preview-modal {
-    padding: 12px !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   .preview-dialog {
     width: 96vw !important;
