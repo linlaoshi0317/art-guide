@@ -4853,6 +4853,26 @@ button {
   transform: scale(.98);
 }
 
+.record-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.record-delete-btn:hover,
+.record-delete-btn:active {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
 .record-thumb.small {
   width: 52px;
   height: 52px;

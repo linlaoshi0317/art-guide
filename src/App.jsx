@@ -27,6 +27,7 @@ import {
   Share2,
   Sparkles,
   Star,
+  Trash2,
   Upload,
   User,
   UserPlus,
@@ -2194,6 +2195,10 @@ export function App() {
     } catch {}
   }
 
+  function deleteRecord(recordId) {
+    setRecords((prev) => prev.filter((r) => r.id !== recordId));
+  }
+
   function handleExport() {
     const advice = safeGuideText(analysis.teacherCopy, defaultAnalysis.teacherCopy);
     const nextSteps = safeStepList(analysis.nextSteps).join("\n");
@@ -3444,6 +3449,7 @@ export function App() {
                 className="record-item"
                 key={record.id}
                 onClick={() => { if (record.preview) openPreview(record.fileName, record.preview); }}
+                onContextMenu={(e) => { e.preventDefault(); if (confirm("删除这条记录？")) deleteRecord(record.id); }}
               >
                 <div className="record-thumb small">
                   {record.preview ? (
@@ -3461,7 +3467,15 @@ export function App() {
                     </p>
                   )}
                 </div>
-                <ChevronRight size={16} strokeWidth={1.5} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                <button
+                  className="record-delete-btn"
+                  onClick={(e) => { e.stopPropagation(); if (confirm("确定删除？")) deleteRecord(record.id); }}
+                  title="删除"
+                >
+                  <Trash2 size={16} strokeWidth={1.8} />
+                </button>
+              </article>
+            ))
               </article>
             ))
           )}
