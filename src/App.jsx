@@ -2338,10 +2338,11 @@ export function App() {
       const origFontSize = el.style.fontSize;
       const hadCapturingClass = el.classList.contains("capturing");
 
-      // 导出更大的版心，保证手机里保存后也清楚
+      // 导出更大的版心，手机用较小尺寸
+      const isMobile = window.innerWidth < 860;
       el.classList.add("capturing");
-      el.style.width = "1240px";
-      el.style.maxWidth = "1240px";
+      el.style.width = isMobile ? "600px" : "1240px";
+      el.style.maxWidth = isMobile ? "600px" : "1240px";
       el.style.maxHeight = "none";
       el.style.overflow = "visible";
       el.style.fontSize = "24px";
@@ -2374,7 +2375,7 @@ export function App() {
 
       const html2canvas = await loadHtml2Canvas();
       const canvas = await html2canvas(el, {
-        scale: 4,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
@@ -2394,18 +2395,22 @@ export function App() {
       if (overlay) overlay.style.overflowY = "";
       if (actions) actions.style.display = "";
 
-      canvas.toBlob(
-        (blob) => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.download = "学员测评单.png";
-          link.href = url;
-          link.click();
-          URL.revokeObjectURL(url);
-        },
-        "image/png",
-        1.0,
-      );
+      // 移动端优先用 Web Share，桌面端用下载链接
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png", 1.0));
+      const file = new File([blob], "学员测评单.png", { type: "image/png" });
+      const url = URL.createObjectURL(blob);
+      
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "学员测评单" });
+      } else {
+        const link = document.createElement("a");
+        link.download = "学员测评单.png";
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
     } catch {
       if (el) {
         el.classList.remove("capturing");
@@ -2429,8 +2434,7 @@ export function App() {
   async function mobileSaveAndBack() {
     if (!userLoggedIn) { setAuthMode("login"); setShowAuthModal(true); return; }
     setShowReport(true);
-    // 等待报告渲染
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 300));
     try {
       await handleSaveReportImage();
     } catch(e) {
