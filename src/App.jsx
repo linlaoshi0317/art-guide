@@ -4167,10 +4167,10 @@ export function App() {
 
                 <div className="report-actions no-print">
                   <button className="sidebar-btn sidebar-btn-primary" type="button" onClick={handleSaveReportImage}>
-                    🖼️ 保存为图片
+                    🖼️ 保存到相册
                   </button>
-                  <button className="sidebar-btn sidebar-btn-outline" type="button" onClick={closeReport}>
-                    关闭
+                  <button className="sidebar-btn sidebar-btn-primary" type="button" onClick={() => { closeReport(); setActiveTab("analysis"); }} style={{ background: "#333" }}>
+                    ← 返回主页
                   </button>
                 </div>
               </div>
