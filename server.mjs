@@ -41,7 +41,7 @@ const PORT = Number(process.env.PORT || 8787);
 const MAX_BODY_BYTES = Number(process.env.ANALYZE_MAX_BODY_BYTES || 12 * 1024 * 1024);
 const AI_PROVIDER = process.env.AI_PROVIDER || "yunwu";
 const AI_BASE_URL = (process.env.AI_BASE_URL || "https://api.wlai.vip/v1").replace(/\/+$/, "");
-const API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "sk-Ifu2nNYcy3QQXi7zmNdvtZd152yVOFCMDpVMvOEJpmx9Cnpn";
+const API_KEY = API_KEY || "sk-Ifu2nNYcy3QQXi7zmNdvtZd152yVOFCMDpVMvOEJpmx9Cnpn";
 const MODEL =
   process.env.AI_MODEL ||
   process.env.OPENAI_VISION_MODEL ||
@@ -1669,7 +1669,7 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
 }
 
 async function generateGuidanceImage(image, fileName, variant, stylePreset = null, talentType = null, note = "") {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = API_KEY;
   if (!apiKey) {
     const error = new Error("missing_api_key");
     error.statusCode = 503;
@@ -1854,7 +1854,7 @@ function buildStyleChatPayload(image, variant) {
 }
 
 async function analyzeWithAI(image, childAge) {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = API_KEY;
   if (!apiKey) {
     const error = new Error("missing_api_key");
     error.statusCode = 503;
@@ -1877,7 +1877,7 @@ async function analyzeWithAI(image, childAge) {
 }
 
 async function analyzeStyleWithAI(image, variant) {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = API_KEY;
   if (!apiKey) {
     return fallbackAdaptiveStyleGuide(variant);
   }
@@ -2377,7 +2377,7 @@ async function handleAnalyze(request, response) {
 }
 
 async function extractFiguresWithAI(image) {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = API_KEY;
   if (!apiKey) {
     const error = new Error("missing_api_key");
     error.statusCode = 503;
@@ -2639,7 +2639,7 @@ async function handleGenerateTurnaround(request, response) {
       return;
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = API_KEY;
     if (!apiKey) {
       sendJson(response, 500, { error: "missing_api_key" });
       return;
