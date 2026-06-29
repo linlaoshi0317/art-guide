@@ -41,7 +41,7 @@ const PORT = Number(process.env.PORT || 8787);
 const MAX_BODY_BYTES = Number(process.env.ANALYZE_MAX_BODY_BYTES || 12 * 1024 * 1024);
 const AI_PROVIDER = process.env.AI_PROVIDER || "yunwu";
 const AI_BASE_URL = (process.env.AI_BASE_URL || "https://api.wlai.vip/v1").replace(/\/+$/, "");
-const API_KEY = API_KEY || "sk-Ifu2nNYcy3QQXi7zmNdvtZd152yVOFCMDpVMvOEJpmx9Cnpn";
+const API_KEY = process.env.API_KEY || "sk-Ifu2nNYcy3QQXi7zmNdvtZd152yVOFCMDpVMvOEJpmx9Cnpn";
 const MODEL =
   process.env.AI_MODEL ||
   process.env.OPENAI_VISION_MODEL ||
