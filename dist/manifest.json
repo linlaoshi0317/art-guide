@@ -1,0 +1,22 @@
+{
+  "name": "蔺老师儿童美育一对一点评指导网",
+  "short_name": "儿童美育指导",
+  "description": "帮助家长从作品中看见孩子的优势、表达和成长方向",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf8f3",
+  "theme_color": "#e07b39",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
