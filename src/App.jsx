@@ -4302,7 +4302,14 @@ export function App() {
             <Search size={20} strokeWidth={2} />
             <span>分析</span>
           </button>
-          <button className="mobile-nav-btn" onClick={mobileSaveAndBack}>
+          <button className="mobile-nav-btn" onClick={() => {
+            if (!userLoggedIn) { setAuthMode("login"); setShowAuthModal(true); return; }
+            if (!analysis || !fileName || fileName === "未命名作品") {
+              alert("请先上传作品并完成分析，再查看测评单");
+              return;
+            }
+            setShowReport(true);
+          }}>
             <Save size={20} strokeWidth={2} />
             <span>保存</span>
           </button>
