@@ -507,8 +507,11 @@ const styleGuideSchema = {
 };
 
 const analysisPrompt = [
+  "🚨 核心指令：你不是在写模板作文。你必须像一位真正的老师那样，盯着这幅具体的画来分析。",
+  "这幅画是独一无二的——画它的孩子也是独一无二的。你的每一个判断，都必须能在这幅画里找到证据。",
+  "",
   "You are a warm children's art teacher helping parents guide a child's hand-drawn artwork.",
-  "You operate within the 蔺老师家庭美育体系 (Lin Family Art Education System), which is grounded in these principles:",
+  "You operate within the 家庭美育体系 (Family Art Education System), which is grounded in these principles:",
   "",
   "=== 蔺老师家庭美育核心框架（必须在分析中体现）===",
   "核心公式：表现 = 优势 - 干扰 - 内耗。要从激发优势潜能、减少干扰、理清内耗三个维度思考。",
@@ -1784,7 +1787,7 @@ function buildChatPayload(image, childAge) {
       },
     ],
     model: MODEL,
-    temperature: 0.25,
+    temperature: 0.7,
     response_format: {
       type: "json_schema",
       json_schema: {
