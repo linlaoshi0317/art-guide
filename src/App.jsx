@@ -3478,55 +3478,6 @@ export function App() {
   function renderRecordsView() {
     return (
       <section className="records-page">
-        {/* ── 已保存分析记录 ── */}
-        <div className="section-heading">
-          <h2>📋 分析记录</h2>
-          <span>{records.length ? `${records.length} 条` : "暂无"}</span>
-        </div>
-
-        <div className="record-list">
-          {records.length === 0 ? (
-            <div className="empty-record">
-              <BookOpen size={30} strokeWidth={1.6} />
-              <strong>还没有保存记录</strong>
-              <p>在分析页面点击右上角"保存记录"，分析结果会保存在这里。</p>
-            </div>
-          ) : (
-            records.map((record) => (
-              <article
-                className="record-item"
-                key={record.id}
-                onClick={() => { if (record.preview) openPreview(record.fileName, record.preview); }}
-                onContextMenu={(e) => { e.preventDefault(); if (confirm("删除这条记录？")) deleteRecord(record.id); }}
-              >
-                <div className="record-thumb small">
-                  {record.preview ? (
-                    <img src={record.preview} alt={record.fileName} />
-                  ) : (
-                    <FileText size={28} strokeWidth={1.5} />
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong>{record.fileName}</strong>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{record.savedAt}</span>
-                  {record.analysis?.teacherCopy && (
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {safeGuideText(record.analysis.teacherCopy, "")}
-                    </p>
-                  )}
-                </div>
-                <button
-                  className="record-delete-btn"
-                  onClick={(e) => { e.stopPropagation(); if (confirm("确定删除？")) deleteRecord(record.id); }}
-                  title="删除"
-                >
-                  <Trash2 size={16} strokeWidth={1.8} />
-                </button>
-              </article>
-            ))
-          )}
-        </div>
-
         {/* ── 生成历史 ── */}
         <div className="section-heading" style={{ marginTop: 24 }}>
           <h2>🖼️ 生成历史</h2>
