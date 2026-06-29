@@ -3476,8 +3476,6 @@ export function App() {
                 </button>
               </article>
             ))
-              </article>
-            ))
           )}
         </div>
 
