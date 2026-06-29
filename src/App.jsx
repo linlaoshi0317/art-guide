@@ -4239,6 +4239,29 @@ export function App() {
         {renderWorkspaceModal()}
           </div>{/* main-area */}
         </div>{/* app-layout */}
+        {/* ── 手机端底部导航 ── */}
+        <nav className="mobile-nav">
+          <button className="mobile-nav-btn" onClick={() => { setActiveTab("analysis"); }}>
+            <Search size={20} strokeWidth={2} />
+            <span>分析</span>
+          </button>
+          <button className="mobile-nav-btn" onClick={() => { setActiveTab("records"); loadRecords(); }}>
+            <FileText size={20} strokeWidth={2} />
+            <span>记录</span>
+          </button>
+          {userLoggedIn ? (
+            <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>
+              <Settings size={20} strokeWidth={2} />
+              <span>设置</span>
+            </button>
+          ) : (
+            <button className="mobile-nav-btn" onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}>
+              <LogIn size={20} strokeWidth={2} />
+              <span>登录</span>
+            </button>
+          )}
+        </nav>
+
       </section>
     </main>
   );

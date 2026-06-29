@@ -4923,5 +4923,45 @@ button {
   }
   .content {
     padding: 16px 12px !important;
+    padding-bottom: 80px !important;
+  }
+}
+
+/* 手机端底部导航 */
+@media (max-width: 860px) {
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 10px);
+    justify-content: space-around;
+  }
+
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .mobile-nav-btn:active {
+    color: var(--accent);
+  }
+}
+
+@media (min-width: 861px) {
+  .mobile-nav {
+    display: none;
   }
 }
