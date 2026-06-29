@@ -4912,3 +4912,16 @@ button {
     padding: 0 12px 32px;
   }
 }
+
+/* 手机端隐藏侧边栏，改为顶部导航 */
+@media (max-width: 860px) {
+  .sidebar {
+    display: none !important;
+  }
+  .app-layout {
+    flex-direction: column;
+  }
+  .content {
+    padding: 16px 12px !important;
+  }
+}
