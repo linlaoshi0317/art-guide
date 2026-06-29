@@ -39,12 +39,13 @@ loadLocalEnv();
 
 const PORT = Number(process.env.PORT || 8787);
 const MAX_BODY_BYTES = Number(process.env.ANALYZE_MAX_BODY_BYTES || 12 * 1024 * 1024);
-const AI_PROVIDER = process.env.AI_PROVIDER || "openai";
-const AI_BASE_URL = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
+const AI_PROVIDER = process.env.AI_PROVIDER || "yunwu";
+const AI_BASE_URL = (process.env.AI_BASE_URL || "https://api.wlai.vip/v1").replace(/\/+$/, "");
+const API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "sk-Ifu2nNYcy3QQXi7zmNdvtZd152yVOFCMDpVMvOEJpmx9Cnpn";
 const MODEL =
   process.env.AI_MODEL ||
   process.env.OPENAI_VISION_MODEL ||
-  (AI_PROVIDER === "openai" ? "gpt-5.5" : "gpt-4o-mini");
+  "gpt-4o-mini";
 const IMAGE_DETAIL = process.env.OPENAI_IMAGE_DETAIL || "high";
 const DEFAULT_IMAGE_MODELS =
   AI_PROVIDER === "openai"
@@ -60,7 +61,7 @@ const IMAGE_SIZES = (process.env.AI_IMAGE_SIZE || "1024x1024,1536x1024,1024x1536
   .filter(Boolean);
 
 // ── 用户认证 & 数据持久化配置 ──
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = process.env.JWT_SECRET || "lin-art-guide-2024-secret-fixed";
 const JWT_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 const DATA_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
@@ -68,8 +69,8 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const RECORDS_FILE = path.join(DATA_DIR, "records.json");
 const INVITE_FILE = path.join(DATA_DIR, "invite-codes.json");
 const PAYMENT_SECRET = process.env.PAYMENT_SECRET || "";
-const FREE_MODE = process.env.FREE_MODE === "true"; // 免费模式开关
-const ADMIN_KEY = process.env.ADMIN_KEY || "admin";  // 后台管理密钥
+const FREE_MODE = process.env.FREE_MODE !== "false"; // 默认免费模式
+const ADMIN_KEY = process.env.ADMIN_KEY || "lin2024";
 
 // 初始化 data 目录
 fs.mkdirSync(DATA_DIR, { recursive: true });
