@@ -3776,6 +3776,23 @@ export function App() {
                       <span>账户状态</span>
                       <span className="settings-value">{userLoggedIn ? `已登录 · ${authUser?.email || ""}` : "未登录"}</span>
                     </label>
+                    {!userLoggedIn && (
+                      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                        <button className="sidebar-btn sidebar-btn-primary" style={{ flex: 1 }} onClick={() => { setShowSettings(false); setAuthMode("login"); setShowAuthModal(true); }}>
+                          登录
+                        </button>
+                        <button className="sidebar-btn sidebar-btn-outline" style={{ flex: 1 }} onClick={() => { setShowSettings(false); setAuthMode("register"); setShowAuthModal(true); }}>
+                          注册
+                        </button>
+                      </div>
+                    )}
+                    {userLoggedIn && (
+                      <div style={{ marginBottom: 8 }}>
+                        <button className="sidebar-btn sidebar-btn-outline" style={{ width: "100%" }} onClick={handleLogout}>
+                          退出登录
+                        </button>
+                      </div>
+                    )}
                     <div className="settings-item">
                       <span>当前作品</span>
                       <span className="settings-value">{fileName}</span>
@@ -4262,15 +4279,9 @@ export function App() {
             {records.length > 0 && <span className="tab-badge">{records.length}</span>}
           </button>
           <div style={{ flex: 1 }} />
-          {userLoggedIn ? (
-            <span style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 8px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {authUser?.email || ""}
-            </span>
-          ) : (
-            <button className="tab-btn" onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}>
-              👤 登录
-            </button>
-          )}
+          <button className="tab-btn" onClick={() => setShowSettings(true)} style={{ fontSize: 16, padding: "8px 14px" }}>
+            ⚙️
+          </button>
         </div>
 
         <div className="content upload-layout" style={{ display: activeTab === "analysis" ? "block" : "none" }}>
@@ -4317,10 +4328,7 @@ export function App() {
             <Save size={22} strokeWidth={2} />
             <span>保存</span>
           </button>
-          <button className="mobile-nav-btn" onClick={() => setShowSettings(true)}>
-            <Settings size={20} strokeWidth={2} />
-            <span>设置</span>
-          </button>
+          <div style={{ width: 48 }} />
         </nav>
 
       </section>
