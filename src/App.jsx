@@ -2318,7 +2318,7 @@ export function App() {
       new Promise((resolve, reject) => {
         if (window.html2canvas) return resolve(window.html2canvas);
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+        script.src = "https://registry.npmmirror.com/html2canvas/1.4.1/files/dist/html2canvas.min.js";
         script.onload = () => resolve(window.html2canvas);
         script.onerror = reject;
         document.head.appendChild(script);
@@ -4245,7 +4245,7 @@ export function App() {
             <FileText size={20} strokeWidth={2} />
             <span>记录</span>
           </button>
-          <button className="mobile-nav-btn mobile-nav-center" onClick={() => { handleSave(); if (!userLoggedIn) { setAuthMode("login"); setShowAuthModal(true); } }}>
+          <button className="mobile-nav-btn mobile-nav-center" onClick={openReport}>
             <Save size={22} strokeWidth={2} />
             <span>保存</span>
           </button>

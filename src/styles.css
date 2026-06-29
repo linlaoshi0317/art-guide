@@ -5012,6 +5012,20 @@ button {
     margin: 12px !important;
     border-radius: 16px !important;
   }
+
+  /* 预览弹窗居中 */
+  .preview-modal {
+    padding: 12px !important;
+  }
+  .preview-dialog {
+    width: 96vw !important;
+    max-height: 85vh !important;
+    border-radius: 16px !important;
+  }
+  .preview-stage img {
+    max-height: 70vh !important;
+    object-fit: contain !important;
+  }
 }
 
 /* 手机端底部导航 */
