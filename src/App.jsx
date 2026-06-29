@@ -4263,22 +4263,8 @@ export function App() {
           <div className="hero-shape hero-shape-3" />
         </div>
 
-        {/* ── 顶部导航标签 ── */}
-        <div className="tab-nav">
-          <button
-            className={`tab-btn ${activeTab === "analysis" ? "active" : ""}`}
-            onClick={() => setActiveTab("analysis")}
-          >
-            🎨 分析
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "records" ? "active" : ""}`}
-            onClick={() => { setActiveTab("records"); loadRecords(); }}
-          >
-            📋 记录
-            {records.length > 0 && <span className="tab-badge">{records.length}</span>}
-          </button>
-          <div style={{ flex: 1 }} />
+        {/* ── 顶部设置按钮 ── */}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px 0", position: "sticky", top: 0, zIndex: 5, background: "var(--page-bg)" }}>
           <button className="tab-btn" onClick={() => setShowSettings(true)} style={{ fontSize: 16, padding: "8px 14px" }}>
             ⚙️
           </button>
@@ -4320,13 +4306,17 @@ export function App() {
         </div>{/* app-layout */}
         {/* ── 手机端底部导航 ── */}
         <nav className={`mobile-nav ${navHidden ? "nav-hidden" : ""}`}>
-          <button className="mobile-nav-btn" onClick={() => { setActiveTab("records"); loadRecords(); }}>
-            <FileText size={20} strokeWidth={2} />
-            <span>记录</span>
+          <button className="mobile-nav-btn" onClick={() => setActiveTab("analysis")}>
+            <Search size={20} strokeWidth={2} />
+            <span>分析</span>
           </button>
           <button className="mobile-nav-btn" onClick={mobileSaveAndBack}>
             <Save size={20} strokeWidth={2} />
             <span>保存</span>
+          </button>
+          <button className="mobile-nav-btn" onClick={() => { setActiveTab("records"); loadRecords(); }}>
+            <FileText size={20} strokeWidth={2} />
+            <span>记录</span>
           </button>
         </nav>
 
