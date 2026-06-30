@@ -184,6 +184,14 @@ function requireAuth(request) {
   return payload || null;
 }
 
+// 免费模式下自动使用访客身份，无需登录
+function getAuthOrGuest(request) {
+  if (FREE_MODE) {
+    return { userId: "guest", email: "guest@artguide.local", isGuest: true };
+  }
+  return requireAuth(request);
+}
+
 // ──────────── 用户 & 积分管理 ────────────
 
 function getUsers() {
@@ -2352,8 +2360,8 @@ async function handleGetRecords(request, response) {
 // ──────────── 路由处理：AI 分析（原有）────────────
 
 async function handleAnalyze(request, response) {
-  // 认证检查
-  const auth = requireAuth(request);
+  // 认证检查（免费模式自动放行）
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2488,7 +2496,7 @@ async function extractFiguresWithAI(image) {
 }
 
 async function handleExtractFigures(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2545,8 +2553,8 @@ function getFriendlyGenerationMessage(error) {
 }
 
 async function handleGenerateGuidanceImage(request, response) {
-  // 认证检查
-  const auth = requireAuth(request);
+  // 认证检查（免费模式自动放行）
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2641,7 +2649,7 @@ const turnaroundPrompt = [
 ].join("\n");
 
 async function handleGenerateTurnaround(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;

@@ -2,7 +2,7 @@
 cmd = "node server.mjs"
 
 [build]
-cmd = "npm run build"
+cmd = "npm install"
 
 [variables]
 PORT = "8787"
