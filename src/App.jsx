@@ -142,7 +142,7 @@ export function App() {
   function updateTeacherCopy(v) { setAnalysis(prev => ({ ...prev, teacherCopy: v })); }
 
   return (
-    <main style={st.page}><div style={st.container}>
+    <main style={st.page}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spinning{animation:spin 1s linear infinite}`}</style><div style={st.container}>
       <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p><button onClick={() => setShowSettings(true)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#888" }} title="设置"><Settings size={20} /></button></header>
       {activeTab === "analysis" && <div>
         <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>1</span> 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
@@ -168,7 +168,7 @@ export function App() {
           </>}
         </div>}
         {gStatus === "error" && <div style={st.errorBox}>❌ {gErr}<br /><button onClick={runGuidance} style={{ ...st.btnAccent, marginTop: 8 }}>重新生成</button></div>}
-        {showColorizeBtn && gStatus === "done" && <div style={st.card}><div style={{ textAlign: "center" }}><p style={{ ...st.textSmall, marginBottom: 10 }}>检测到优化图为线稿风格，是否需要一键上色？</p><button onClick={runColorize} disabled={cStatus === "colorizing"} style={cStatus === "colorizing" ? st.btnDisabled : { ...st.btnPrimary, background: "#7C3AED" }}><Palette size={18} />{cStatus === "colorizing" ? "上色中……" : cStatus === "done" ? "✓ 上色完成" : "一键上色"}</button></div></div>}
+        {showColorizeBtn && gStatus === "done" && <div style={st.card}><div style={{ textAlign: "center" }}><p style={{ ...st.textSmall, marginBottom: 10 }}>检测到优化图为线稿风格，是否需要一键上色？</p><button onClick={runColorize} disabled={cStatus === "colorizing"} style={cStatus === "colorizing" ? { ...st.btnDisabled, background: "#7C3AED", color: "#fff" } : { ...st.btnPrimary, background: "#7C3AED" }}>{cStatus === "colorizing" ? <><RefreshCcw size={18} className="spinning" />上色中……</> : cStatus === "done" ? "✓ 上色完成" : <><Palette size={18} />一键上色</>}</button></div></div>}
 
         {(status === "done" || aSrc !== "idle") && <div>
           {isDone && <div style={st.card}><h3 style={st.h3}>📝 老师点评 <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>（可编辑）</span></h3><textarea value={a.teacherCopy} onChange={e => updateTeacherCopy(e.target.value)} rows={3} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} /></div>}
