@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { Download, FileText, Palette, RefreshCcw, Save, Search, Sparkles, Upload, X } from "lucide-react";
+import { Download, FileText, LogIn, Palette, RefreshCcw, Save, Search, Settings, Sparkles, Upload, X } from "lucide-react";
 
 const GBS = 1;
 const C = { newArtwork: "新作品", title: "蔺老师—儿童美育一对一点评指导网", saved: "已保存", save: "保存记录", replace: "更换", artworkAlt: "上传的孩子手绘作品", guideAction: "一键优化", guideGenerating: "正在生成优化图……", guideDone: "已生成优化图", guideFailed: "生成失败", guideFailedHint: "刚刚没生成成功，可以稍后重试。", guideEmpty: "上传作品后点「一键优化」生成优化图。", guideResult: "优化效果", strengthClosing: "父母好好学习，孩子天天向上——先看见孩子，再看见作品。", closePreview: "关闭", styleSelectTitle: "画风方向", styleSelectHint: "可以自动匹配或指定完成风格", styleAuto: "自动根据作品匹配", original: "原画", guided: "优化后", noSavedRecords: "暂无保存记录", noSavedRecordsHint: "分析完成后点「保存记录」在此查看", analysisRecord: "分析记录", justNow: "刚刚", generationHistory: "生成历史", generationHistoryHint: "每次「一键优化」生成的优化图会自动保存在这里", noGenerationHistory: "暂无生成记录", viewReport: "查看测评单", downloadReport: "下载测评单", reportTitle: "学员测评单" };
@@ -59,7 +59,7 @@ function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resol
 const st = {
   page: { minHeight: "100vh", background: "#f5f4f0", fontFamily: "system-ui, -apple-system, sans-serif" },
   container: { maxWidth: 900, margin: "0 auto", padding: "20px 20px 100px" },
-  header: { textAlign: "center", padding: "30px 0 20px" },
+  header: { textAlign: "center", padding: "30px 0 20px", position: "relative" },
   h1: { fontSize: 22, margin: 0, color: "#1a1a1a" },
   sub: { color: "#888", fontSize: 14, marginTop: 4 },
   card: { background: "#fff", borderRadius: 18, padding: 20, marginBottom: 16, boxShadow: "0 1px 0 rgba(255,255,255,0.7), 0 12px 30px rgba(15,23,42,0.04)" },
@@ -103,7 +103,16 @@ export function App() {
   const [records, setRecords] = useState([]), [gHistory, setGHistory] = useState([]), [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("analysis"), [showReport, setShowReport] = useState(false), [previewImage, setPreviewImage] = useState(null);
   const [cStatus, setCStatus] = useState("idle");
-  const [showColorizeBtn, setShowColorizeBtn] = useState(false); // idle | colorizing | done
+  const [showColorizeBtn, setShowColorizeBtn] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [authToken, setAuthToken] = useState(() => { try { return localStorage.getItem("art_token") || ""; } catch { return ""; } });
+  const [authUser, setAuthUser] = useState(null);
+  const [authMode, setAuthMode] = useState("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authInviteCode, setAuthInviteCode] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false); // idle | colorizing | done
   const selStyle = useMemo(() => GSO(styleId), [styleId]);
   const sName = useMemo(() => SDN(styleGuide), [styleGuide]);
   const isDone = status === "done";
@@ -121,6 +130,9 @@ export function App() {
 
   async function runColorize() { if (gResults.length === 0) return; setCStatus("colorizing"); try { const data = await API("/api/colorize-image", { image: gResults[0].image }); const newResults = [{ ...gResults[0], image: data.image, colorized: true }]; setGResults(newResults); setCStatus("done"); setGHistory(h => { const updated = [...h]; if (updated.length > 0) updated[0] = { ...updated[0], generatedImage: data.image }; return updated; }); } catch (e) { setCStatus("idle"); alert("上色失败：" + (e.message || "请重试")); } }
 
+  async function handleAuth() { setAuthError(""); setAuthLoading(true); try { const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login"; const body = authMode === "register" ? { email: authEmail, password: authPassword, inviteCode: authInviteCode } : { email: authEmail, password: authPassword }; const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) { setAuthError(data.error || "操作失败"); return; } setAuthToken(data.token); setAuthUser(data.user); localStorage.setItem("art_token", data.token); setShowSettings(false); } catch { setAuthError("网络错误"); } finally { setAuthLoading(false); } }
+  function handleLogout() { setAuthToken(""); setAuthUser(null); localStorage.removeItem("art_token"); }
+
   async function exportReport() { const el = rptRef.current; if (!el || !window.html2canvas) return; try { const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, fs: el.style.fontSize }; const im = window.innerWidth < 860; el.style.width = im ? "600px" : "1240px"; el.style.maxWidth = im ? "600px" : "1240px"; el.style.maxHeight = "none"; el.style.overflow = "visible"; el.style.fontSize = "24px"; const ac = el.querySelector(".report-actions"); if (ac) ac.style.display = "none"; const imgs = el.querySelectorAll("img"); await Promise.all(Array.from(imgs).map(i => new Promise(r => { if (i.complete && i.naturalWidth > 0) r(); else { i.onload = r; i.onerror = r; setTimeout(r, 5000); } }))); await new Promise(r => setTimeout(r, 200)); const cv = await window.html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", windowHeight: el.scrollHeight, height: el.scrollHeight }); Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, fontSize: orig.fs }); if (ac) ac.style.display = ""; const blob = await new Promise(r => cv.toBlob(r, "image/png", 1)); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.download = "学员测评单.png"; a.href = url; a.click(); URL.revokeObjectURL(url); } catch { window.print(); } }
 
   const a = analysis, pa = a.psychologyAnalysis, fe = a.familyEducation, pr = a.projectionAnalysis, ti = a.talentInsight, pw = a.parentWording;
@@ -129,13 +141,13 @@ export function App() {
 
   return (
     <main style={st.page}><div style={st.container}>
-      <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p></header>
+      <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p><button onClick={() => setShowSettings(true)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#888" }} title="设置"><Settings size={20} /></button></header>
       {activeTab === "analysis" && <div>
         <div style={st.card}><div style={st.stepLabel}>1 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
           <div style={{ marginTop: 12 }}><span style={{ fontSize: 12, color: "#888" }}>孩子姓名（选填）</span><input type="text" placeholder="输入孩子姓名或昵称" value={childName} onChange={e => setChildName(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginTop: 4 }} /></div>
           <div style={{ marginTop: 12 }}><span style={{ fontSize: 12, color: "#E07B39" }}>*必选 </span><select value={childAge} onChange={e => setChildAge(e.target.value)} style={{ ...st.select, width: "auto", marginBottom: 0 }}><option value="">选择年龄段</option><option value="3-5">3~5岁 · 象征期</option><option value="5-8">5~8岁 · 意向表现期</option><option value="8-12">8~12岁 · 写实期</option><option value="12+">12岁+ · 专业发展期</option></select></div></div>
         <div style={st.card}><div style={st.stepLabel}>2 选择画风方向并生成优化图</div><select value={styleId} onChange={e => { setStyleId(e.target.value); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); }} style={st.select}>{styleGroups.map(g => <optgroup key={g.label} label={g.label}>{g.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</optgroup>)}</select><p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>{selStyle.summary}</p><textarea placeholder="补充说明（可选）" value={gNote} onChange={e => setGNote(e.target.value)} rows={2} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, marginBottom: 12, resize: "vertical" }} />
-          <button onClick={runGuidance} disabled={gStatus === "generating" || !preview} style={gStatus === "generating" || !preview ? st.btnDisabled : st.btnPrimary}>{gStatus === "generating" ? <RefreshCcw size={18} className="spinning" /> : <Sparkles size={18} />}{gStatus === "generating" ? C.guideGenerating : C.guideAction}</button></div>
+          <button onClick={runGuidance} disabled={gStatus === "generating" || !preview || !childAge} style={gStatus === "generating" || !preview || !childAge ? st.btnDisabled : st.btnPrimary}>{!childAge && preview ? "请先选择年龄段" : gStatus === "generating" ? <><RefreshCcw size={18} className="spinning" />{C.guideGenerating}</> : <><Sparkles size={18} />{C.guideAction}</>}</button></div>
         {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}>3 对比结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div><div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.divider}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div>{gResults.length > 0 ? <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}</div></div></div>}
         {gStatus === "error" && <div style={st.errorBox}>❌ {gErr}<br /><button onClick={runGuidance} style={{ ...st.btnAccent, marginTop: 8 }}>重新生成</button></div>}
         {showColorizeBtn && gStatus === "done" && <div style={st.card}><div style={{ textAlign: "center" }}><p style={{ ...st.textSmall, marginBottom: 10 }}>检测到优化图为线稿风格，是否需要一键上色？</p><button onClick={runColorize} disabled={cStatus === "colorizing"} style={cStatus === "colorizing" ? st.btnDisabled : { ...st.btnPrimary, background: "#7C3AED" }}><Palette size={18} />{cStatus === "colorizing" ? "上色中……" : cStatus === "done" ? "✓ 上色完成" : "一键上色"}</button></div></div>}
@@ -184,8 +196,21 @@ export function App() {
       </div>}
 
       {activeTab === "records" && <div>
-        <div style={st.card}><h3 style={st.h3}>📋 {C.analysisRecord}</h3>{records.length === 0 ? <div style={{ textAlign: "center", color: "#888" }}><p>{C.noSavedRecords}</p><p style={st.textSmall}>{C.noSavedRecordsHint}</p></div> : records.map(r => <div key={r.id} style={st.recordItem} onClick={() => { setAnalysis(r.analysis); setActiveTab("analysis"); }}><img src={r.preview} alt="" style={st.thumb} /><div><strong style={{ fontSize: 14 }}>{r.fileName}</strong><br /><span style={st.textSmall}>{r.savedAt}</span></div></div>)}</div>
-        <div style={st.card}><h3 style={st.h3}>🖼️ {C.generationHistory}</h3>{gHistory.length === 0 ? <div style={{ textAlign: "center", color: "#888" }}><p>{C.noGenerationHistory}</p><p style={st.textSmall}>{C.generationHistoryHint}</p></div> : gHistory.map(h => <div key={h.id} style={st.recordItem}><img src={h.generatedImage} alt="" style={st.thumb} /><div><strong style={{ fontSize: 14 }}>{h.fileName}</strong><br /><span style={st.textSmall}>{h.createdAt} · {h.styleName}</span></div></div>)}</div>
+        <div style={st.card}><h3 style={st.h3}>📋 {C.analysisRecord} <span style={{ fontSize: 12, color: "#aaa", fontWeight: 400 }}>（{records.length}条）</span></h3>
+          {records.length === 0 ? <div style={{ textAlign: "center", padding: 30, color: "#888" }}><p style={{ margin: 0 }}>{C.noSavedRecords}</p><p style={{ ...st.textSmall, marginTop: 8 }}>{C.noSavedRecordsHint}</p></div>
+          : records.map((r, idx) => <div key={r.id} style={{ ...st.recordItem, cursor: "pointer" }} onClick={() => { setAnalysis(r.analysis); setActiveTab("analysis"); }}>
+            {r.preview ? <img src={r.preview} alt="" style={st.thumb} /> : <div style={{ ...st.thumb, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎨</div>}
+            <div style={{ flex: 1 }}><strong style={{ fontSize: 14 }}>{r.fileName}</strong><br /><span style={st.textSmall}>{r.savedAt}</span></div>
+            <button onClick={e => { e.stopPropagation(); setRecords(prev => prev.filter((_, i) => i !== idx)); }} style={{ background: "none", border: "none", color: "#ccc", cursor: "pointer", fontSize: 18, padding: 4 }} title="删除">×</button>
+          </div>)}
+        </div>
+        <div style={st.card}><h3 style={st.h3}>🖼️ {C.generationHistory} <span style={{ fontSize: 12, color: "#aaa", fontWeight: 400 }}>（{gHistory.length}条）</span></h3>
+          {gHistory.length === 0 ? <div style={{ textAlign: "center", padding: 30, color: "#888" }}><p style={{ margin: 0 }}>{C.noGenerationHistory}</p><p style={{ ...st.textSmall, marginTop: 8 }}>{C.generationHistoryHint}</p></div>
+          : gHistory.map(h => <div key={h.id} style={{ ...st.recordItem, cursor: "default" }}>
+            <img src={h.generatedImage} alt="" style={st.thumb} />
+            <div style={{ flex: 1 }}><strong style={{ fontSize: 14 }}>{h.fileName}</strong><br /><span style={st.textSmall}>{h.createdAt} · {h.styleName}</span></div>
+          </div>)}
+        </div>
       </div>}
     </div>
 
@@ -203,6 +228,26 @@ export function App() {
       <div style={{ textAlign: "center", paddingTop: 12, borderTop: "1px solid #eee" }}><p style={st.textSmall}>{C.strengthClosing}</p></div>
     </div><div style={st.modalActions} className="report-actions"><button onClick={() => setShowReport(false)} style={st.btnSecondary}><X size={16} /> {C.closePreview}</button><button onClick={exportReport} style={st.btnAccent}><Download size={16} /> {C.downloadReport}</button></div></div></div>}
     <nav style={st.nav}><button onClick={() => setActiveTab("analysis")} style={st.navBtn(activeTab === "analysis")}><Search size={20} /><span>分析</span></button><button onClick={() => setActiveTab("records")} style={st.navBtn(activeTab === "records")}><FileText size={20} /><span>记录</span></button></nav>
+
+    {/* Settings Modal */}
+    {showSettings && <div style={st.overlay} onClick={() => setShowSettings(false)}><div style={{ ...st.modal, maxWidth: 420 }} onClick={e => e.stopPropagation()}><div style={st.modalScroll}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}><h2 style={{ margin: 0, fontSize: 20 }}>设置</h2><button onClick={() => setShowSettings(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
+      {authUser ? <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 16, margin: "0 0 4px" }}>已登录：{authUser.email}</p>
+        <p style={{ ...st.textSmall, marginBottom: 16 }}>积分：{authUser.credits || 0}</p>
+        <button onClick={handleLogout} style={{ ...st.btnSecondary, color: "#C62828" }}>退出登录</button>
+      </div> : <div>
+        <div style={{ display: "flex", gap: 0, marginBottom: 16 }}>
+          <button onClick={() => setAuthMode("login")} style={{ flex: 1, padding: 10, border: "none", background: authMode === "login" ? "#E07B39" : "#f0f0f0", color: authMode === "login" ? "#fff" : "#555", borderRadius: "8px 0 0 8px", cursor: "pointer", fontWeight: 600 }}>登录</button>
+          <button onClick={() => setAuthMode("register")} style={{ flex: 1, padding: 10, border: "none", background: authMode === "register" ? "#E07B39" : "#f0f0f0", color: authMode === "register" ? "#fff" : "#555", borderRadius: "0 8px 8px 0", cursor: "pointer", fontWeight: 600 }}>注册</button>
+        </div>
+        <input type="email" placeholder="邮箱" value={authEmail} onChange={e => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 8 }} />
+        <input type="password" placeholder="密码" value={authPassword} onChange={e => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 8 }} />
+        {authMode === "register" && <input type="text" placeholder="邀请码" value={authInviteCode} onChange={e => setAuthInviteCode(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 8 }} />}
+        {authError && <p style={{ color: "#C62828", fontSize: 13, marginBottom: 8 }}>{authError}</p>}
+        <button onClick={handleAuth} disabled={authLoading} style={{ ...st.btnPrimary, opacity: authLoading ? 0.6 : 1 }}>{authLoading ? "处理中……" : authMode === "register" ? "注册" : "登录"}</button>
+      </div>}
+    </div></div></div>}
     </main>
   );
 }
