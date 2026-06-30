@@ -302,7 +302,7 @@ function saveInviteCodes(codes) {
   writeJSON(INVITE_FILE, codes);
 }
 
-function validateAndUseInviteCode(code) {
+function validateInviteCode(code) {
   const codes = getInviteCodes();
   const entry = codes[code];
   if (!entry) return { valid: false, reason: "邀请码无效" };
@@ -310,11 +310,23 @@ function validateAndUseInviteCode(code) {
   if (entry.expiresAt && new Date(entry.expiresAt) < new Date()) {
     return { valid: false, reason: "邀请码已过期" };
   }
-  // 标记为已使用
+  return { valid: true, entry };
+}
+
+function markInviteCodeUsed(code) {
+  const codes = getInviteCodes();
+  const entry = codes[code];
+  if (!entry) return;
   entry.used = true;
   entry.usedAt = new Date().toISOString();
   saveInviteCodes(codes);
-  return { valid: true };
+}
+
+// 保留旧函数向后兼容
+function validateAndUseInviteCode(code) {
+  const result = validateInviteCode(code);
+  if (result.valid) markInviteCodeUsed(code);
+  return result;
 }
 
 function generateInviteCode(note = "") {
@@ -2072,15 +2084,17 @@ async function handleRegister(request, response) {
       return;
     }
 
-    // 验证邀请码
-    const inviteResult = validateAndUseInviteCode(inviteCode);
+    // 验证邀请码（仅检查有效性，不标记使用）
+    const inviteResult = validateInviteCode(inviteCode);
     if (!inviteResult.valid) {
+      writeServerLog("register_failed", { email, inviteCode, reason: inviteResult.reason });
       sendJson(response, 400, { error: inviteResult.reason || "邀请码无效" });
       return;
     }
 
     const existing = getUserByEmail(email);
     if (existing) {
+      writeServerLog("register_failed", { email, inviteCode, reason: "邮箱已注册" });
       sendJson(response, 409, { error: "该邮箱已注册，请直接登录" });
       return;
     }
@@ -2090,6 +2104,9 @@ async function handleRegister(request, response) {
       sendJson(response, 500, { error: "注册失败，请稍后重试" });
       return;
     }
+
+    // 注册成功后标记邀请码为已使用
+    markInviteCodeUsed(inviteCode);
 
     const token = generateJWT({ userId: user.id, email: user.email });
     writeServerLog("user_registered", { userId: user.id, email: user.email, inviteCode });
