@@ -48,9 +48,9 @@ const MODEL =
   "gpt-4o-mini";
 const IMAGE_DETAIL = process.env.OPENAI_IMAGE_DETAIL || "high";
 const DEFAULT_IMAGE_MODELS =
-	  AI_PROVIDER === "openai"
-	    ? "gpt-image-1"
-	    : "gpt-image-1";
+  AI_PROVIDER === "openai"
+    ? "gpt-image-1"
+    : "gpt-image-2,gpt-image-1,gpt-image-1.5,qwen-image-edit-2509,flux.1-kontext-pro";
 const IMAGE_MODELS = (process.env.AI_IMAGE_MODEL || DEFAULT_IMAGE_MODELS)
   .split(",")
   .map((item) => item.trim())
@@ -69,26 +69,11 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const RECORDS_FILE = path.join(DATA_DIR, "records.json");
 const INVITE_FILE = path.join(DATA_DIR, "invite-codes.json");
 const PAYMENT_SECRET = process.env.PAYMENT_SECRET || "";
-const FREE_MODE = process.env.FREE_MODE === "true"; // 默认关闭免费模式（需登录），仅FREE_MODE=true时免费
+const FREE_MODE = process.env.FREE_MODE === "true"; // 默认收费，需登录
 const ADMIN_KEY = process.env.ADMIN_KEY || "lin2024";
 
 // 初始化 data 目录
 fs.mkdirSync(DATA_DIR, { recursive: true });
-
-// ──────────── 数据恢复（从 repo 备份）────────────
-const REPO_DATA_DIR = path.join(path.dirname(DATA_DIR), "data_backup");
-try {
-  if (fs.existsSync(REPO_DATA_DIR)) {
-    for (const file of ["users.json","orders.json","records.json","invite-codes.json"]) {
-      const src = path.join(REPO_DATA_DIR, file);
-      const dst = path.join(DATA_DIR, file);
-      if (fs.existsSync(src) && !fs.existsSync(dst)) {
-        fs.copyFileSync(src, dst);
-        console.log(`[boot] restored ${file} from backup`);
-      }
-    }
-  }
-} catch (e) { console.log("[boot] backup restore skipped:", e.message); }
 
 function writeServerLog(event, details = {}) {
   const safeDetails = Object.fromEntries(
@@ -390,151 +375,118 @@ const labels = {
 const responseSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["teacherCopy", "tags", "skeleton", "nextSteps", "colorPlan", "strengthAnalysis"],
+  required: ["teacherCopy", "psychologyAnalysis", "familyEducation", "projectionAnalysis", "talentInsight", "parentWording"],
   properties: {
     teacherCopy: {
       type: "string",
-      description: "【禁止模板】必须基于这幅画的具体内容写的蔺老师点评（80-150字）。格式：①先指出画面中一个具体细节（位置+内容）→②用温暖语言解读这个细节的意义→③给出一个针对这幅画的下一步建议。严禁写'你画得真好''很有想象力''继续加油'等任何画上都适用的万能话。必须让家长一看就知道这段话只属于这幅画。",
+      description: "温暖简短的老师点评（80-120字）。先描述画面的一个具体细节（位置+内容），再肯定孩子的用心。如果需要建议'下一步'，必须遵循强关联原则：只能建议添加与画面主题直接相关的元素（如军事主题→战场/武器/防御工事，花朵主题→花园/蝴蝶/阳光，机器人→齿轮/科技背景），严禁建议添加'云彩''树木''蓝天白云''草地'等与主题无关的通用元素。点评内容要与页面生成的优化图方向保持一致。禁止模板话术，禁止说'画得像不像/好不好'。",
     },
-    tags: {
-      type: "array",
-      minItems: 3,
-      maxItems: 5,
-      items: { type: "string" },
-    },
-    skeleton: {
+    psychologyAnalysis: {
       type: "object",
       additionalProperties: false,
-      required: ["visualCenter", "flowLine", "balance", "depth"],
+      required: ["emotionState", "securityLevel", "selfCognition", "keyEvidence"],
       properties: {
-        visualCenter: { type: "string" },
-        flowLine: { type: "string" },
-        balance: { type: "string" },
-        depth: { type: "string" },
-      },
-    },
-    nextSteps: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: { type: "string" },
-    },
-    colorPlan: {
-      type: "object",
-      additionalProperties: false,
-      required: ["summary", "palette", "focus", "steps"],
-      properties: {
-        summary: {
+        emotionState: {
           type: "string",
-          description:
-            "A warm Simplified Chinese color direction, 40-80 Chinese characters.",
+          description: "【情绪状态分析】基于色彩+线条+内容三维度判断。必须引用画面具体证据。参考框架：红色/尖锐线条=情绪激烈，蓝色/柔和线条=沉静，黑色大量+阴郁内容=需关注。格式：'色彩上[证据]，线条上[证据]，内容上[证据]→综合判断情绪状态为[状态]。'",
         },
-        palette: {
-          type: "array",
-          minItems: 4,
-          maxItems: 6,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["name", "hex", "usage"],
-            properties: {
-              name: { type: "string" },
-              hex: {
-                type: "string",
-                pattern: "^#[0-9A-Fa-f]{6}$",
-              },
-              usage: { type: "string" },
-            },
-          },
+        securityLevel: {
+          type: "string",
+          description: "【安全感评估】基于布局+人物大小+环境元素判断。参考：画面极小在角落=缺乏安全感；居中饱满=安全感足；画保护者=渴望被保护；太阳/房子缺位=需关注。格式：'布局上[证据]，人物表现上[证据]→安全感状态为[评估]。'",
         },
-        focus: {
+        selfCognition: {
+          type: "string",
+          description: "【自我认知分析】基于画自己的方式判断。参考：身体完整色彩丰富=自我整合良好；缺少部位=某方面否定；把自己画很大=自信；很小=自我评价低。格式：'[具体画面证据]→自我认知表现为[分析]。'",
+        },
+        keyEvidence: {
           type: "array",
-          minItems: 3,
+          minItems: 2,
           maxItems: 4,
           items: { type: "string" },
-        },
-        steps: {
-          type: "array",
-          minItems: 3,
-          maxItems: 4,
-          items: { type: "string" },
+          description: "支撑以上判断的关键画面证据清单，每条必须标注画面位置。",
         },
       },
     },
-    strengthAnalysis: {
+    familyEducation: {
       type: "object",
       additionalProperties: false,
-      required: ["psychology", "development", "familyEducation", "talentType", "talentDesc", "projectionObservations", "xinAnalysis"],
+      required: ["parentInterference", "strengthPotential", "actionSuggestions"],
       properties: {
-        psychology: {
+        parentInterference: {
           type: "string",
-          description: "【禁止模板】必须引用画面具体视觉元素（位置+内容+特征），再基于证据做心理学推断。格式：'画面中[位置]的[内容]呈现出[特征]——这可能说明[推断]。' 严禁写'探索世界''表达内心''每个孩子都是独特的'等万能话。",
+          description: "【家长可能的干扰】基于蔺老师公式'表现=优势-干扰-内耗'，从画面痕迹推断家长可能存在的干扰行为（如催促、比较、过度指导、用'像不像'评价等）。格式：'画面中[具体痕迹]可能说明家长存在[干扰类型]→这会导致孩子[内耗表现]。'",
         },
-        development: {
+        strengthPotential: {
           type: "string",
-          description: "【禁止模板】必须引用画面中具体的发展指标（比例/细节/空间组织/符号使用），判断发展阶段，给出具体建议。格式：'画面中[具体表现]说明孩子已掌握[具体能力]，处于[发展阶段]。' 严禁写'正在发展''需要时间''每个孩子不同'等万能话。",
+          description: "【优势潜能发现】基于四个观察线索（成功体验/事前渴望/过程投入/事后满足）和天赋识别，指出孩子在这幅画中展现的优势方向。格式：'从[画面证据]可以看出孩子在[某方面]有优势潜能。'",
         },
-        familyEducation: {
-          type: "string",
-          description: "【禁止模板】必须引用画面中可观察的具体痕迹（修改/专注/创意选择），联系蔺老师公式'表现=优势-干扰-内耗'分析，给出2-3条可今晚执行的具体行动。格式：'画面中[具体痕迹]说明[状态]→建议家长[具体行动]。' 严禁写'多鼓励''营造氛围''接纳孩子'等万能话。",
-        },
-        talentType: {
-          type: "string",
-          description: "【蔺老师家庭美育·12种绘画天赋】必须基于画面内容和过程痕迹综合判断。①情感能力(表情丰富/情绪氛围/情感互动)②专注力(精细细节/心流痕迹/长时间投入)③耐力持续力(规模大/完成度高/反复修改)④故事天赋(叙事场景/分镜/角色互动)⑤设计天赋(改造美化/装饰纹样/创意设计)⑥幽默天赋(搞笑情节/夸张造型/有趣创意)⑦画动物天赋(动物生动传神/抓住特征/动物共情)⑧色彩天赋(用色大胆/情绪配色/色彩有个人风格)⑨数学智能(数量精确/规律图案/几何排列)⑩逻辑智能(因果清楚/结构合理/有条理)⑪空间智能(透视遮挡/远近大小/立体感)⑫机械智能(机械结构/内部构造/功能理解)。",
-        },
-        talentDesc: {
-          type: "string",
-          description: "【禁止概括】格式：'主导天赋：[类型]。画面证据：①[位置]的[元素]呈现[特征]→说明[天赋]。②...③...' 至少引用3个画面位置。严禁不标注位置。严禁写'展现了良好的''体现了'等模板话术。必须有位置+内容+特征+分析四要素。",
-        },
-        talentManifestations: {
+        actionSuggestions: {
           type: "array",
           minItems: 3,
           maxItems: 5,
           items: { type: "string" },
-          description: "【禁止概括】每条格式：'[画面位置]：[具体描述看到的]→[这个画面选择说明什么]' 必须以位置开头。3-5条，每条指向画面不同的具体位置。严禁模板话术。",
+          description: "给家长的3-5条具体行动建议。必须是今晚就能做的小行动。禁止写'多鼓励''营造氛围''接纳孩子'等万能话。每条要对应画面具体内容。",
         },
-        projectionObservations: {
+      },
+    },
+    projectionAnalysis: {
+      type: "object",
+      additionalProperties: false,
+      required: ["attentionProjection", "relationshipProjection", "needProjection"],
+      properties: {
+        attentionProjection: {
+          type: "string",
+          description: "【注意力投射】孩子近期关注什么，画里就反复出现什么。引用画面中占比最大/细节最多的元素。格式：'画面中[占比最大/细节最多的元素]说明孩子近期注意力集中在[某方面]。'",
+        },
+        relationshipProjection: {
+          type: "string",
+          description: "【关系投射】画中人物的大小/距离/完整性投射孩子的人际关系感知。参考：谁最大=最重要，谁被漏画=关系疏离，谁第一个画=心中最亲近。格式：'画面中[人物关系特征]投射出[关系感知]。'",
+        },
+        needProjection: {
+          type: "string",
+          description: "【需求投射】画中的超级英雄/保护者/特殊角色投射孩子的内心需求（保护/力量/关注/自由等）。格式：'画面中[角色/元素]可能投射孩子对[需求]的渴望。'",
+        },
+      },
+    },
+    talentInsight: {
+      type: "object",
+      additionalProperties: false,
+      required: ["primaryTalent", "evidenceList"],
+      properties: {
+        primaryTalent: {
+          type: "string",
+          description: "【主导天赋识别】从蔺老师12种天赋中选择最匹配的1种。格式：'主导天赋：[天赋名称]。判定理由：①[画面证据]→②[过程痕迹推断]→③[两者共同指向该天赋]。'",
+        },
+        evidenceList: {
           type: "array",
           minItems: 2,
           maxItems: 4,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["label", "text"],
-            properties: {
-              label: { type: "string", description: "投射维度名称，从蔺老师课程投射体系中选择：注意力投射、成长投射、象征投射、共鸣投射、需求投射、位置投射、好恶投射、生理投射。" },
-              text: { type: "string", description: "【禁止模板】基于这幅具体画面的投射观察。格式：'画面中[具体位置]的[具体内容]选择了[具体方式]——这可能投射了[推断]。' 严禁万能话。" },
-            },
-          },
-        },
-        xinAnalysis: {
-          type: "object",
-          additionalProperties: false,
-          required: ["growthStage", "colorEmotion", "layoutRead", "keyInsight"],
-          properties: {
-            growthStage: {
-              type: "string",
-              description: "【徐静茹11阶段】判断孩子所处的绘画发展阶段：涂鸦期(2-4岁)/印象派时期(2-5岁)/性蕾期(3岁)/俄狄浦斯期(5-8岁)/写实期(6岁+)/太阳笑脸期(6-10岁)/男孩狗不理期(7-9岁)/女孩公主情结期(5-12岁)/同龄认同期(9-11岁)/青春期(10-20岁)。必须引用画面具体证据说明为什么是这个阶段。",
-            },
-            colorEmotion: {
-              type: "string",
-              description: "【徐静茹色彩心理学】基于画面中实际使用的颜色做情绪解读。引用每种主要颜色的正面与深层含义（红=生命力/攻击性、蓝=沉静/压抑、黑=力量/恐惧、黄=快乐/依赖、绿=平和/固执、紫=敏感/焦虑、橙=开朗/冲动、粉=温柔/依赖）。必须基于画面具体颜色分布、面积大小做证据链分析。严禁模板话术。",
-            },
-            layoutRead: {
-              type: "string",
-              description: "【徐静茹布局分析】分析画面在纸上的布局：偏上/偏下/偏左/偏右/居中/极小/过大。解读孩子的心理空间和自我感知。格式：'画面主体位于[位置]，占比[大小]→可能说明[心理含义]。'",
-            },
-            figureRead: {
-              type: "string",
-              description: "【徐静茹人物分析】如果画面有人物/动物/角色：谁最大→最重要；谁最仔细→最关注；谁被漏画肢体→关系问题；夸张部位→痛点放大。如果画面没有人物，分析其他主体元素的投射意义。必须引用具体画面位置。",
-            },
-            keyInsight: {
-              type: "string",
-              description: "【徐静茹核心洞察】60字以内，用徐静茹'第三种语言'核心理念提炼这幅画最核心的心理洞察。格式：这幅画是孩子内心世界的X光片——[核心发现]。",
-            },
-          },
+          items: { type: "string" },
+          description: "天赋证据清单。每条格式：'[画面位置]的[具体元素]→说明[天赋表现]'。必须标注位置。",
         },
       },
+    },
+    parentWording: {
+      type: "object",
+      additionalProperties: false,
+      required: ["shouldSay", "shouldNotSay"],
+      properties: {
+        shouldSay: {
+          type: "array",
+          minItems: 2,
+          maxItems: 4,
+          items: { type: "string" },
+          description: "【家长应该说的话】基于蔺老师反馈话术体系，结合这幅具体画面给出家长可以直接对孩子说的原句。每条必须是对应画面具体内容的完整句子。参考话术：'可以给我介绍一下你的画吗？''我看到这里有一条很长的线''你画这个地方特别仔细，看来它对你很重要''这次你比上次多画了很多细节，你自己觉得哪里最满意？'",
+        },
+        shouldNotSay: {
+          type: "array",
+          minItems: 2,
+          maxItems: 4,
+          items: { type: "string" },
+          description: "【家长不应该说的话】基于蔺老师家庭美育干扰理论，结合这幅画面给出家长应避免说的话。参考禁忌：'你画的是什么？''怎么不像？''别人画得比你好''真棒太好了（空泛）'。每条需结合画面特征说明为什么不能说。",
+        },
+      },
+    },
   },
 };
 
@@ -560,15 +512,6 @@ const styleGuideSchema = {
 };
 
 const analysisPrompt = [
-  "🚨🚨🚨 第一优先级死命令 —— 违者输出作废 🚨🚨🚨",
-  "1. 你必须只分析当前上传的这幅画。禁止使用任何在别的画上也能用的通用话。",
-  "2. 你的每一个判断必须指向画面中具体位置（如'左上角的XX''画面中央的XX'）。不标注具体位置的描述一律无效。",
-  "3. 徐静茹《看画识童心》体系：绘画是孩子的第三种语言。你必须用以下13维度框架来观察这幅画：生命能量(顺/逆)、持续力/爆发力、色彩心理、形状分析、布局心理空间、人物投射(谁最大/最仔细/漏肢体/痛点放大)、情绪、安全感、攻击性、创伤、自我、关系、环境。挑选与这幅画最相关的3-5个维度深入分析。",
-  "4. 绝对禁止以下模板话术：'展现了良好的''体现了''具有''正在发展''需要时间''每个孩子不同''探索世界''表达内心''多鼓励''营造氛围''接纳孩子'。",
-  "5. 如果画面是黑白的，禁止在分析中任何地方讨论'色彩''配色''颜色'。",
-  "6. 必须输出孩子处于徐静茹11个阶段中的哪个（涂鸦期/印象派时期/性蕾期/俄狄浦斯期/写实期/太阳笑脸期/男孩狗不理期/女孩公主情结期/同龄认同期/青春期）。",
-  "7. 你的每一条分析都必须遵循'证据→推断→建议'三段式，缺一不可。证据必须来自画面具体位置。",
-  "",
   "🚨 核心指令：你不是在写模板作文。你必须像一位真正的老师那样，盯着这幅具体的画来分析。",
   "这幅画是独一无二的——画它的孩子也是独一无二的。你的每一个判断，都必须能在这幅画里找到证据。",
   "",
@@ -587,7 +530,7 @@ const analysisPrompt = [
   "Analyze the uploaded image visually. Keep the child's original expression and imagination.",
   "Return JSON only. All visible text values must be in Simplified Chinese.",
   "Do not mention AI, model, upload, image quality, or adult judging standards.",
-  "teacherCopy：80-150字。必须以画面中一个具体细节开头（如'画面左上角那只蓝色的龙……''你给机器人画了12个关节……'），然后解读这个细节，最后给一个针对这幅画的下一个绘画建议。严格禁止任何泛用夸奖（'画得真好''很有想象力''色彩很美'等）。家长看完必须感受到这段话只属于这幅画。",
+  "teacherCopy should feel like a warm teacher's note: first describe a specific detail from the drawing (position + content), then encourage. If suggesting next steps, ONLY suggest elements that are directly related to the drawing's theme (military→battlefield/weapons, flowers→garden/butterflies, robots→gears/tech, etc.). NEVER suggest generic scenery like 'clouds''trees''blue sky''grass' unless they directly match the subject. The teacher comment must be consistent with the optimized image generated on the page. Never say 画得像不像/好不好.",
   "tags should describe visible traits such as subject, line density, color, composition direction, balance, and blank space.",
   "Do not generate separate contrast, alignment, repetition, or proximity cards.",
   "skeleton should diagnose the composition frame: visual center, viewing flow line, balance, and foreground/middle/background depth.",
@@ -596,6 +539,27 @@ const analysisPrompt = [
   "",
   "=== STRENGTH ANALYSIS — 必须基于画面具体内容，严禁瞎猜 ===",
   "IMPORTANT: Every single statement in strengthAnalysis must be backed by SPECIFIC visual evidence you can point to in THIS drawing. If you cannot see evidence for something, do NOT say it.",
+  "",
+  "============================================================",
+  "📚 儿童绘画心理学分析参考框架（徐静茹《看画识童心》）",
+  "============================================================",
+  "以下是基于徐静茹老师著作的13维度解读体系，分析时必须结合画面实际内容参考：",
+  "",
+  "【生命能量】通过线条方向识别：顺时针画圈=顺应型（适应性强、乖巧），逆时针画圈=执拗型（坚韧、抗压）。线条流畅稳定vs戳破纸=不同能量模式。",
+  "【持续力vs爆发力】长而稳定线条=持续力型（沉稳耐心、慢热持久），细碎短线条=爆发力型（思维跳跃、快速启动易转移）。",
+  "【色彩解读】关键原则：6岁前用色随机性较大，学龄后更具稳定性。红色=活力/攻击性，蓝色=沉静/压抑，黑色=力量/不安（关键看量和是否唯一使用），黄色=快乐/渴望关注，绿色=平和/固执，紫色=敏感/焦虑，粉色=温柔/依赖。黑白线稿完全正常，不代表心理问题。",
+  "【形状象征】圆形=秩序感/保护，三角形/锯齿=目标感/冲突，方形/格子=规则感/束缚，心形=爱的需求，星形=自我期许，连环图案=条理性/可能重复焦虑。",
+  "【布局分析】画面极小在角落=缺乏安全感/退缩，过大冲出纸外=渴望关注/冲动，偏上=乐观/想象力，偏下=务实/可能压抑，偏左=怀旧/依恋过去，偏右=面向未来/与权威关系，居中饱满=安全感充足。",
+  "【人物解读】谁画得最大=最重要的人，谁最仔细=关注最多，被漏画肢体=关系可能疏离，第一个画的人=心中最重要的人，把自己画大=自信，画很小=自我评价低，夸张某部位=痛点放大（心理或生理的关注焦点）。",
+  "【情绪识别】头上着火/机器人=强烈愤怒压力，火山/外星人入侵=释放压抑情绪，不平静书桌=内心烦躁，线条杂乱戳破纸=情绪激烈，全是太阳笑脸=太阳笑脸期正常（6-10岁），画面阴暗人物哭泣=悲伤需关注。",
+  "【安全感评估】画保护者形象=渴望被保护，被拴住小动物=感到过度控制，太阳+房子=温暖与归属（缺位需关注），主体偏右偏上=安全感较足，大量云朵/栅栏/围墙=心理防线，底部坚实基线=脚踏实地。",
+  "【攻击性识别】线条尖锐锯齿多+力度大=攻击或防御性强，武器/战斗/怪兽=释放攻击冲动（男孩7-9岁狗不理期完全正常），红色+粗重锐利线条=愤怒攻击双重信号。",
+  "【创伤信号】尖锐三角形反复出现=内心刺痛感，动物身上创可贴=无意识表达'我受伤了'，车祸事故重现=PTSD可能，长期只画黑白画面阴郁=持续性情绪创伤，'毁灭世界'主题=极度压抑的求救。创伤迹象需建议专业心理咨询。",
+  "【自我认知】身体完整色彩丰富=自我整合良好，缺少身体部位=某方面否定或忽视，重复画同一形象=通过该形象完成自我认同建构，大量'我'的标注=自我意识建立中。",
+  "【关系投射】经常画某个家人=最亲近的人，拒绝画某个家人=关系疏远或恐惧，家人间大小比例失调=心中权力和亲密序位，留守儿童把父母画在天上/远处=思念和现实隔离感。",
+  "【环境元素】太阳=温暖安全生命能量，房子=家庭归属感（门窗大小=开放性），树=成长生命力（树干粗细=承压力），蛇=恐惧或潜意识，怪兽=恐惧具象化，天空/云=心境开阔度，道路=人生方向感。",
+  "",
+  "⚠️ 使用以上框架时：①必须引用画面具体证据 ②多维度综合判断不可孤立 ③用'可能''可以观察''可以问问孩子'的态度 ④不贴标签不下诊断 ⑤创伤信号严重时建议专业介入。",
   "",
   "============================================================",
   "⚠️ 第一步：画面基本事实声明（必须先输出，防止瞎编）",
@@ -790,17 +754,6 @@ const analysisPrompt = [
   "  模板禁区：禁止写'孩子用画画表达内心世界''画面是孩子心灵的窗口'等万能话",
   "  正面示例：{ label: '注意力投射', text: '画面中坦克占据了80%的空间，履带画了32个齿轮且每个齿轮的齿数都不同——这远超同龄人对军事机械的关注度，近期的注意力几乎全部集中在军事主题上。' }",
   "",
-    "============================================================",
-    "⭐ XIN ANALYSIS - 徐静茹《看画识童心》13维度解码（必填）",
-    "============================================================",
-    "你必须基于徐静茹绘画心理学体系额外分析。绘画是孩子的第三种语言。",
-    "",
-    "【xinAnalysis.growthStage】从11阶段选1个引用证据：涂鸦期/印象派时期/性蕾期/俄狄浦斯期/写实期/太阳笑脸期/男孩狗不理期/女孩公主情结期/同龄认同期/青春期。格式：该画处于[阶段]——证据：[具体表现]。",
-    "【xinAnalysis.colorEmotion】黑白画写不适用。有色画：引用每种主色的徐静茹含义(红=生命力/攻击性 蓝=沉静/压抑 黑=力量/恐惧 黄=快乐/依赖 绿=平和/固执 紫=敏感/焦虑 橙=开朗 粉=依赖)，关注量和是否唯一使用。",
-    "【xinAnalysis.layoutRead】偏上=乐观 偏下=务实/缺安全感 偏左=怀旧 偏右=面向未来 居中=安全感足 极小=退缩 过大=渴望关注。格式：主体位于[位置]，占比[%]→[心理含义]。",
-    "【xinAnalysis.figureRead】有人物：谁最大=最重要 谁最仔细=最关注 漏肢体=关系问题 夸张部位=痛点放大。无人物则分析主体投射。引用具体位置。",
-    "【xinAnalysis.keyInsight】60字内核心洞察。格式：这幅画是孩子内心世界的X光片——[核心发现]。",
-    "",
   "Color guidance should help preserve the original line drawing while making the finished effect more complete, similar to a guided colored result.",
   "",
   "============================================================",
@@ -826,34 +779,15 @@ function buildGuidanceImagePrompt(variant = 1, talentType = null) {
   const safeVariant = Number.isFinite(Number(variant)) && Number(variant) > 0
     ? Math.floor(Number(variant))
     : 1;
-  const direction =
-    guidanceVariantDirections[(safeVariant - 1) % guidanceVariantDirections.length];
+  const direction = guidanceVariantDirections[(safeVariant - 1) % guidanceVariantDirections.length];
 
   return [
-  "Edit the uploaded child artwork as a preservation-first teacher guidance image.",
-  `This is alternative方案 ${safeVariant}. Create a fresh option that is visibly different from earlier attempts while still preserving the original drawing.`,
-  direction,
-  "",
-  "=== TWO-STEP PROCESS ===",
-  "STEP 1 — Content Completion: First analyze what is MISSING from the child's drawing. Is the background empty? Is the scene incomplete? Are there blank areas that need story elements? Add the missing content using the EXACT SAME hand-drawn style as the child — same wobbly line quality, same simple shapes, same childlike proportions. The added elements must look like the child drew them, not like an adult illustrator filled them in. Use pencil-like or crayon-like strokes that match the original drawing's texture.",
-  "STEP 2 — Coloring: Only after the content gaps are filled, apply coloring. Use child-friendly colors. Preserve the original lines underneath. Color should enhance, not cover.",
-  "",
-  "Do not remake the drawing. Do not replace the child style with a polished adult illustration.",
-  "Keep the original subjects, childlike linework, rough hand-drawn strokes, shapes, proportions, positions, scale relationships, number of characters or objects, and main composition as the fixed base.",
-  "Preserve 100 percent of the uploaded drawing's visible original content. Do not erase, crop, move, resize, redraw, replace, simplify, beautify, or cover any existing animals, people, objects, faces, gestures, outlines, brush marks, colors, or child-made details.",
-  "Treat the uploaded artwork as a fixed base layer. Add missing content in matching hand-drawn child style first, then apply coloring last.",
-  "",
-  "🚫 STRICTLY FORBIDDEN — 严禁以下简笔画元素：",
-  "- 太阳：禁止画标准圆形+周围射线的简笔太阳",
-  "- 云朵：禁止画棉花糖形状的卡通云",
-  "- 树：禁止画长方形树干+圆形树冠的棒棒糖树",
-  "- 花：禁止画五瓣雏菊或标准简笔花",
-  "- 草：禁止画一排锯齿状的简笔草",
-  "- 鸟：禁止画V字形海鸥简笔鸟",
-  "如果必须添加自然元素，必须画得像孩子观察后手绘的——树要有不规则枝干，云要有变化形状，太阳要歪歪扭扭像孩子刚学会画的样子。没有任何简笔画痕迹。",
-  "",
-  "The result should look like the child's own artwork after a teacher helped them add what was missing and then color it — all in the same child-drawing style.",
-  "No text, no watermark, no annotation arrows, no guide lines, no tutorial layout, no split panels.",
+    "【最高指令】优化孩子手绘作品。90%保留原画。添加强关联背景，适度扩展不可太局限。",
+    direction,
+    "",
+    "强关联：机器人→机械/科技/战争 | 花朵→花园/蝴蝶 | 恐龙→火山/森林 | 人物→区分室内外场景 | 汽车→道路/城市 | 海洋→海水/珊瑚 | 动物→自然栖息地",
+    "室内只加室内元素，室外只加室外元素。严禁与主题无关的蓝天白云太阳万能背景。",
+    "保持孩子手绘风格。填充空白让画面完整。",
   ].join("\n");
 }
 
@@ -989,48 +923,66 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
   ].filter(Boolean).join("\n") : "";
 
   return [
-    "🚨🚨🚨 最高优先级死命令 —— 违反任何一条则输出作废 🚨🚨🚨",
-    "1. 这必须是同一个孩子画的！优化后的图看起来必须像是原画的小作者自己完成的。线条的颤抖感、形状的稚拙感、比例的童趣感——一个都不能丢。",
-    "2. 禁止美化：不要把孩子的画变成成人插画。不准磨皮、不准柔化、不准加CG特效、不准改成迪士尼/吉卜力/任何商业风格。",
-    "3. 原画100%保留：已经存在的每一笔都不能擦除、不能覆盖、不能移位、不能改变颜色。你只能在空白处添加，只能做加法不能做减法。",
-    "4. 添加的内容必须和原画同龄：如果一个5岁孩子画不出透视准确的建筑，你就不能添加透视准确的建筑。保持和原画一致的绘画能力水平。",
-    "5. 上色只能做最后一层：颜色是透明的薄纱，原画线条必须清晰透出。不能把线稿埋在厚涂下面。",
+    "【最高指令 - 必须严格执行】",
+    "90%保留原画所有线条和颜色。只添加与原画内容强关联的背景元素。场景要丰富但不能偏离主题。",
     "",
-    "Edit the uploaded child artwork into one complete optimized teacher-guided artwork.",
-    `This is alternative ${safeVariant}. Create a fresh option that is visibly different from earlier attempts while still keeping the original drawing as the clear source.`,
-    `Chosen style: ${style.styleCategory}.`,
-    `Style name for internal guidance: ${style.styleName}.`,
-    `Why this fits the drawing: ${style.reason}.`,
-    `Scene direction: ${style.sceneDirection}.`,
-    `Color direction: ${style.colorDirection}.`,
-    `Composition direction: ${style.compositionDirection}.`,
+    "【场景类型强制判断 - 最高优先级】先判断原画主题属于哪类场景，背景必须匹配：",
+    "「必定室外」主题（无论原画有没有画背景，必须加室外场景）：",
+    "  战争/军事/坦克/士兵/飞机/战斗机/战场 → 室外战场、战壕、硝烟、天空",
+    "  运动/足球/篮球/跑步/游泳/骑车 → 室外操场、球场、公园、道路",
+    "  交通工具/汽车/火车/轮船/飞机 → 室外道路、轨道、海洋、天空",
+    "  自然/森林/山川/河流/海滩/火山 → 室外自然环境",
+    "  恐龙/野生动物/海洋动物 → 室外自然栖息地",
+    "  建筑/城市/房屋外部 → 室外城市或街道",
+    "「必定室内」主题（必须加室内场景）：",
+    "  教室/上课/黑板/课桌 → 室内教室",
+    "  厨房/做饭/食物/餐具 → 室内厨房",
+    "  卧室/睡觉/床 → 室内卧室",
+    "  客厅/看电视/沙发 → 室内客厅",
+    "「需判断」主题（根据原画线索决定）：",
+    "  人物 → 看人物动作和周围线索判断室内外",
+    "  宠物/动物 → 看是否有室内特征（地板/家具）或室外特征（草地/天空）",
+    "",
+    "强关联映射（以此为方向，适度扩展不可太局限）：",
+    "机器人→机械零件、齿轮、科技、战争、工厂、操控室等背景",
+    "花朵→花园、草地、蝴蝶、蜜蜂、阳光、篱笆等",
+    "恐龙→火山、原始森林、化石、远古植物、其他恐龙等",
+    "人物→区分室内外（室外+公园/游乐场/街道/操场，室内+房间/家具/窗户/玩具）",
+    "汽车→道路、交通标志、城市建筑、车库、加油站等",
+    "海洋动物→海水、珊瑚、气泡、海草、沙滩等",
+    "动物→自然栖息地、同伴动物、食物、树木、洞穴等",
+    "室内场景→地板/墙壁/家具/窗户/灯具/装饰（绝不加天空草地）",
+    "室外场景→地面/树木/建筑/天空/云朵（绝不加室内家具）",
+    "食物/物品→相关场景、餐具、桌面、厨房等",
+    "",
+    "严禁：与主题无关的蓝天白云太阳、万能绿草地、不相关的山水、任何与原画内容无关的通用背景",
+    "风格：保持孩子手绘质感，线条可稍优化但不过度精致。填充空白区域让画面完整。",
+    "",
+    "【手绘风格延续 - 关键】",
+    "- 仔细观察原画的笔触特征：是蜡笔质感？铅笔线条？水彩笔？马克笔？油画棒？添加的内容必须用相同笔触",
+    "- 延续原画的线条风格：如果孩子画得随意潦草→添加部分也要随意潦草；如果孩子画得认真细致→添加部分也要认真细致",
+    "- 保持原画的用色习惯：如果孩子只用了几种颜色→不要添加过多新颜色；如果孩子用色大胆丰富→可以延续丰富配色",
+    "- 保留原画中的'不完美'：歪斜的线条、不均匀的涂色、超出轮廓的颜色——这些正是儿童画的魅力",
+    "- 最终效果应该像同一个孩子在同一张纸上继续画完的作品，而不是两个人合画的",
+    "",
+    "【画面层次感与完整度 - 关键】",
+    "- 必须建立清晰的前景、中景、背景三个层次：前景（靠近画面底部的小元素如花草石头）→ 中景（原画主体保持原位）→ 背景（远景如天空/远山/建筑轮廓）",
+    "- 画面不能看起来'没画完'：空白区域必须填充，但填充内容要符合层次逻辑",
+    "- 主体周围要有呼应元素：如果主体在中间→左右各补一些陪衬；如果主体偏一侧→另一侧补足平衡",
+    "- 地面线/地平线必须明确：室外场景要有地面和天空的分界，室内场景要有地板和墙壁的交接",
+    "- 画面四边都要有内容延伸，不能出现'中间有东西四周空白'的情况",
+    "- 添加的元素要有大有小、有疏有密，形成视觉节奏，不能所有添加物一样大、一样间距",
+    "",
+    "【内在构图骨架 - 核心原则】",
+    "不要为了填充而填充。所有添加的内容必须服务于一个明确的构图骨架：",
+    "- 先确定画面的视觉中心（通常是原画主体），所有添加元素围绕这个中心组织",
+    "- 建立一条隐含的视觉动线：可以是S形曲线、对角线、C形弧线，引导视线在画面中流动",
+    "- 运用对比原则：主体大而实→陪衬小而虚；主体密→背景疏；主体暖色→背景冷色",
+    "- 左右或上下要有呼应关系：左边有一棵树→右边可以有一丛灌木回应；上方有云→下方有倒影或阴影",
+    "- 避免元素均匀散布：要有聚有散，形成'视觉重音'和'呼吸空间'",
+    "- 每添加一个元素都要问：它在构图中的作用是什么？是平衡？是引导视线？是呼应主体？如果没有明确作用→不添加",
     talentGuidance,
-    "",
-    "=== TWO-STEP PROCESS ===",
-    "STEP 1 — Content Completion: First analyze what is MISSING from the child's drawing. Is the background empty? Is the scene incomplete? Are there blank areas that need story elements? Add the missing content using the EXACT SAME hand-drawn style as the child — same wobbly line quality, same simple shapes, same childlike proportions. The added elements must look like the child drew them, not like an adult illustrator filled them in. Use pencil-like or crayon-like strokes that match the original drawing's texture.",
-    "STEP 2 — Coloring: Only after the content gaps are filled, apply coloring according to the style direction above. Preserve the original lines underneath. Color should enhance, not cover.",
-    "",
-    "Do not remake the drawing. Do not replace the child style with a polished adult illustration.",
-    "Do not imitate any named living artist, studio, movie, brand, character, or protected IP. Use only the generic visual qualities described above.",
-    "Keep the original subjects, childlike linework, rough hand-drawn strokes, shapes, proportions, positions, scale relationships, number of characters or objects, and main composition as the fixed base.",
-    "Keep the uploaded drawing's visible original content naturally integrated into the final image. Do not erase, crop, move, resize, replace, simplify, beautify, or cover any existing animals, people, objects, faces, gestures, outlines, brush marks, colors, or child-made details.",
-    "Do not create a transparent overlay, ghosted duplicate, double exposure, tracing-sheet effect, split before/after panel, or layered collage of the original image.",
-    "Work directly from the source artwork: first fill content gaps with child-style hand drawing, then color the complete scene.",
-    "CRITICAL - Content relevance: only add background elements and story details that are directly related to the subjects already present in the drawing. If the child drew a robot, add mechanical/tech context in child-drawing style. If they drew flowers, add garden/nature context in child-drawing style. If they drew war/battle, add battlefield context in child-drawing style. NEVER add generic scenery (blue sky, white clouds, sun, generic grass, generic trees) unless those elements are clearly part of the child's original drawing.",
-  "The added hand-drawn elements should have the same imperfect, authentic quality as the original child drawing — wobbly lines, uneven shapes, child-like simplicity. Do not make the additions look polished or professional.",
-  "",
-  "🚫 STRICTLY FORBIDDEN — 严禁以下简笔画元素：",
-  "- 太阳：禁止标准圆形+周围射线的简笔太阳。如果画面需要太阳，必须画得像孩子手绘——形状不规则、光线歪斜、颜色不均匀。",
-  "- 云朵：禁止棉花糖形状的卡通云。云要有变化的不规则轮廓。",
-  "- 树：禁止长方形树干+圆形树冠的棒棒糖树。树要有不规则枝干和多样的叶子形状。",
-  "- 花：禁止五瓣雏菊或标准简笔花。每朵花要有独特的花瓣数量和形状。",
-  "- 草：禁止一排锯齿状的简笔草。草应该是不规则散布的短线或色块。",
-  "- 鸟：禁止V字形海鸥简笔鸟。如果画鸟，必须有个体特征。",
-  "任何添加的自然元素必须看起来是孩子观察后手绘的，不是从符号表里复制的。绝对不能出现简笔画风格的太阳、云、树、花、草。",
-  "",
-    "The result should look like the child drew the entire finished piece themselves after receiving guidance on what to add — NOT like an adult overpainted a child's sketch.",
-    "No text, no watermark, no annotation arrows, no guide lines, no tutorial layout, no split panels.",
-    note ? `\n=== USER'S ADDITIONAL GUIDANCE (highest priority) ===\nThe user provided this specific instruction: "${note}"\nPlease incorporate this guidance into the output while still following all the rules above.` : "",
+    note ? `用户补充：${note}` : "",
   ].filter(Boolean).join("\n");
 }
 
@@ -1145,143 +1097,38 @@ function normalizeAnalysis(value) {
     throw new Error("invalid_analysis");
   }
 
-  const tags = Array.isArray(value.tags)
-    ? value.tags.filter((item) => typeof item === "string" && item.trim()).slice(0, 5)
-    : [];
-  const nextSteps = Array.isArray(value.nextSteps)
-    ? value.nextSteps.filter((item) => typeof item === "string" && item.trim()).slice(0, 3)
-    : [];
-  const skeleton = value.skeleton && typeof value.skeleton === "object" ? value.skeleton : {};
-  const colorPlan = value.colorPlan && typeof value.colorPlan === "object" ? value.colorPlan : {};
-  const palette = Array.isArray(colorPlan.palette)
-    ? colorPlan.palette
-        .filter((item) => item && typeof item === "object")
-        .slice(0, 6)
-        .map((item) => ({
-          hex:
-            typeof item.hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(item.hex)
-              ? item.hex
-              : "#F3C96B",
-          name:
-            typeof item.name === "string" && item.name.trim()
-              ? item.name.trim()
-              : "\u4e3b\u8272",
-          usage:
-            typeof item.usage === "string" && item.usage.trim()
-              ? item.usage.trim()
-              : "\u7528\u5728\u753b\u9762\u4e3b\u89d2\u4e0a\u3002",
-        }))
-    : [];
-  const colorFocus = Array.isArray(colorPlan.focus)
-    ? colorPlan.focus.filter((item) => typeof item === "string" && item.trim()).slice(0, 4)
-    : [];
-  const colorSteps = Array.isArray(colorPlan.steps)
-    ? colorPlan.steps.filter((item) => typeof item === "string" && item.trim()).slice(0, 4)
-    : [];
-
-  const strengthAnalysis = value.strengthAnalysis && typeof value.strengthAnalysis === "object"
-    ? value.strengthAnalysis
-    : null;
-
-  const normalizedStrength = strengthAnalysis ? {
-    psychology: typeof strengthAnalysis.psychology === "string" && strengthAnalysis.psychology.trim()
-      ? strengthAnalysis.psychology.trim()
-      : null,
-    development: typeof strengthAnalysis.development === "string" && strengthAnalysis.development.trim()
-      ? strengthAnalysis.development.trim()
-      : null,
-    familyEducation: typeof strengthAnalysis.familyEducation === "string" && strengthAnalysis.familyEducation.trim()
-      ? strengthAnalysis.familyEducation.trim()
-      : null,
-    talentType: typeof strengthAnalysis.talentType === "string" && strengthAnalysis.talentType.trim()
-      ? strengthAnalysis.talentType.trim()
-      : null,
-    talentDesc: typeof strengthAnalysis.talentDesc === "string" && strengthAnalysis.talentDesc.trim()
-      ? strengthAnalysis.talentDesc.trim()
-      : null,
-    talentManifestations: Array.isArray(strengthAnalysis.talentManifestations)
-      ? strengthAnalysis.talentManifestations.filter((item) => typeof item === "string" && item.trim()).slice(0, 5)
-      : [],
-    projectionObservations: Array.isArray(strengthAnalysis.projectionObservations)
-      ? strengthAnalysis.projectionObservations
-          .filter((item) => item && typeof item.label === "string" && typeof item.text === "string")
-          .slice(0, 4)
-      : [],
-    xinAnalysis: strengthAnalysis.xinAnalysis && typeof strengthAnalysis.xinAnalysis === "object"
-      ? {
-          growthStage: typeof strengthAnalysis.xinAnalysis.growthStage === "string" ? strengthAnalysis.xinAnalysis.growthStage.trim() : null,
-          colorEmotion: typeof strengthAnalysis.xinAnalysis.colorEmotion === "string" ? strengthAnalysis.xinAnalysis.colorEmotion.trim() : null,
-          layoutRead: typeof strengthAnalysis.xinAnalysis.layoutRead === "string" ? strengthAnalysis.xinAnalysis.layoutRead.trim() : null,
-          figureRead: typeof strengthAnalysis.xinAnalysis.figureRead === "string" ? strengthAnalysis.xinAnalysis.figureRead.trim() : null,
-          keyInsight: typeof strengthAnalysis.xinAnalysis.keyInsight === "string" ? strengthAnalysis.xinAnalysis.keyInsight.trim() : null,
-        }
-      : null,
-  } : null;
+  const pa = value.psychologyAnalysis && typeof value.psychologyAnalysis === "object" ? value.psychologyAnalysis : {};
+  const fe = value.familyEducation && typeof value.familyEducation === "object" ? value.familyEducation : {};
+  const pr = value.projectionAnalysis && typeof value.projectionAnalysis === "object" ? value.projectionAnalysis : {};
+  const ti = value.talentInsight && typeof value.talentInsight === "object" ? value.talentInsight : {};
 
   return {
-    teacherCopy:
-      typeof value.teacherCopy === "string" && value.teacherCopy.trim()
-        ? value.teacherCopy.trim()
-        : "\u8fd9\u5f20\u753b\u5df2\u7ecf\u6709\u5f88\u597d\u7684\u89c2\u5bdf\uff0c\u4e0b\u4e00\u6b65\u53ef\u4ee5\u628a\u4e3b\u89d2\u548c\u753b\u9762\u5173\u7cfb\u518d\u6574\u7406\u5f97\u66f4\u6e05\u695a\u3002",
-    tags: tags.length >= 3 ? tags : ["\u89c2\u5bdf\u8ba4\u771f", "\u4e3b\u4f53\u660e\u786e", "\u53ef\u4ee5\u7ee7\u7eed\u4f18\u5316"],
-    principles: normalizePrinciples(value.principles),
-    strengthAnalysis: normalizedStrength,
-    skeleton: {
-      visualCenter:
-        typeof skeleton.visualCenter === "string" && skeleton.visualCenter.trim()
-          ? skeleton.visualCenter.trim()
-          : "\u5148\u627e\u5230\u753b\u9762\u6700\u60f3\u8ba9\u4eba\u770b\u89c1\u7684\u4e3b\u89d2\u3002",
-      flowLine:
-        typeof skeleton.flowLine === "string" && skeleton.flowLine.trim()
-          ? skeleton.flowLine.trim()
-          : "\u7528\u4e00\u6761\u65b9\u5411\u7ebf\u628a\u89c6\u7ebf\u5e26\u56de\u4e3b\u89d2\u3002",
-      balance:
-        typeof skeleton.balance === "string" && skeleton.balance.trim()
-          ? skeleton.balance.trim()
-          : "\u5de6\u53f3\u6216\u4e0a\u4e0b\u9700\u8981\u6709\u56de\u5e94\u5173\u7cfb\u3002",
-      depth:
-        typeof skeleton.depth === "string" && skeleton.depth.trim()
-          ? skeleton.depth.trim()
-          : "\u524d\u666f\u3001\u4e2d\u666f\u3001\u80cc\u666f\u53ef\u4ee5\u5206\u5f97\u66f4\u6e05\u695a\u3002",
+    teacherCopy: typeof value.teacherCopy === "string" && value.teacherCopy.trim()
+      ? value.teacherCopy.trim()
+      : "这张作品已经有了很好的观察，每个孩子都有自己独特的表达方式。",
+    psychologyAnalysis: {
+      emotionState: typeof pa.emotionState === "string" ? pa.emotionState.trim() : "",
+      securityLevel: typeof pa.securityLevel === "string" ? pa.securityLevel.trim() : "",
+      selfCognition: typeof pa.selfCognition === "string" ? pa.selfCognition.trim() : "",
+      keyEvidence: Array.isArray(pa.keyEvidence) ? pa.keyEvidence.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
     },
-    nextSteps:
-      nextSteps.length === 3
-        ? nextSteps
-        : [
-            "\u5148\u5708\u51fa\u4e3b\u89d2\u5e76\u52a0\u91cd\u8f6e\u5ed3",
-            "\u628a\u76f8\u5173\u5143\u7d20\u9760\u8fd1\u653e\u6210\u4e00\u7ec4",
-            "\u91cd\u590d\u4e00\u4e2a\u6709\u8da3\u7684\u5f62\u72b6",
-          ],
-    colorPlan: {
-      summary:
-        typeof colorPlan.summary === "string" && colorPlan.summary.trim()
-          ? colorPlan.summary.trim()
-          : "\u5148\u786e\u5b9a\u4e3b\u89d2\u7684\u4e3b\u8272\uff0c\u518d\u7528\u5c0f\u9762\u79ef\u4eae\u8272\u63d0\u5347\u753b\u9762\u5b8c\u6210\u5ea6\u3002",
-      palette:
-        palette.length >= 4
-          ? palette
-          : [
-              { hex: "#F4C76A", name: "\u6696\u91d1\u8272", usage: "\u7528\u5728\u5934\u53d1\u6216\u4e3b\u89d2\u6700\u4eae\u7684\u90e8\u5206\u3002" },
-              { hex: "#F7D8C6", name: "\u80a4\u8272", usage: "\u7528\u5728\u8138\u90e8\u548c\u624b\u90e8\u7684\u5e95\u8272\u3002" },
-              { hex: "#1E2B4A", name: "\u6df1\u84dd\u8272", usage: "\u7528\u5728\u670d\u88c5\u6216\u91cd\u8272\u533a\u57df\u3002" },
-              { hex: "#6E8FC7", name: "\u6e05\u84dd\u8272", usage: "\u7528\u5728\u773c\u775b\u6216\u5c0f\u88c5\u9970\u4e0a\u3002" },
-            ],
-      focus:
-        colorFocus.length >= 3
-          ? colorFocus
-          : [
-              "\u4e3b\u89d2\u7684\u5934\u53d1\u548c\u773c\u775b\u5148\u786e\u5b9a\u8272\u5f69\u6027\u683c\u3002",
-              "\u670d\u88c5\u7528\u8f83\u6df1\u7684\u989c\u8272\u538b\u4f4f\u753b\u9762\u91cd\u5fc3\u3002",
-              "\u5c0f\u89d2\u8272\u548c\u9053\u5177\u7528\u5c11\u91cf\u4eae\u8272\u505a\u547c\u5e94\u3002",
-            ],
-      steps:
-        colorSteps.length >= 3
-          ? colorSteps
-          : [
-              "\u5148\u94fa\u5927\u8272\u5757\uff0c\u4e0d\u8981\u628a\u7ebf\u6761\u5168\u90e8\u76d6\u4f4f\u3002",
-              "\u518d\u52a0\u6697\u90e8\uff0c\u8ba9\u5934\u53d1\u3001\u8863\u670d\u548c\u8138\u90e8\u5206\u5f00\u3002",
-              "\u6700\u540e\u52a0\u773c\u775b\u9ad8\u5149\u548c\u5c0f\u88c5\u9970\u4eae\u70b9\u3002",
-            ],
+    familyEducation: {
+      parentInterference: typeof fe.parentInterference === "string" ? fe.parentInterference.trim() : "",
+      strengthPotential: typeof fe.strengthPotential === "string" ? fe.strengthPotential.trim() : "",
+      actionSuggestions: Array.isArray(fe.actionSuggestions) ? fe.actionSuggestions.filter(e => typeof e === "string" && e.trim()).slice(0, 5) : [],
+    },
+    projectionAnalysis: {
+      attentionProjection: typeof pr.attentionProjection === "string" ? pr.attentionProjection.trim() : "",
+      relationshipProjection: typeof pr.relationshipProjection === "string" ? pr.relationshipProjection.trim() : "",
+      needProjection: typeof pr.needProjection === "string" ? pr.needProjection.trim() : "",
+    },
+    talentInsight: {
+      primaryTalent: typeof ti.primaryTalent === "string" ? ti.primaryTalent.trim() : "",
+      evidenceList: Array.isArray(ti.evidenceList) ? ti.evidenceList.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
+    },
+    parentWording: {
+      shouldSay: Array.isArray(value.parentWording?.shouldSay) ? value.parentWording.shouldSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
+      shouldNotSay: Array.isArray(value.parentWording?.shouldNotSay) ? value.parentWording.shouldNotSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
     },
   };
 }
@@ -1815,13 +1662,78 @@ async function generateGuidanceImage(image, fileName, variant, stylePreset = nul
 
 function getAgeContext(childAge) {
   const ageMap = {
-    "3-5": "The child is 3-5 years old (scribbling stage to schematic stage). At this age, children are developing fine motor skills and beginning to create recognizable shapes. Evaluate the artwork according to this developmental stage. Focus on spontaneity, emotional expression, and emerging symbol use rather than technical accuracy.",
-    "5-8": "The child is 5-8 years old (schematic stage to early realism). Children at this age use symbols and begin to organize space with baseline/skyline. They can tell stories through their drawings. Focus on narrative intent, spatial organization attempts, and creative choices.",
-    "8-12": "The child is 8-12 years old (realism stage). At this age, children strive for visual accuracy and may become self-critical. They develop understanding of depth, proportion, and perspective. Focus on technical development, attention to detail, and creative problem-solving while protecting artistic confidence.",
-    "12+": "The child is 12+ years old (professional development stage). Adolescents can handle advanced techniques, abstract concepts, and sophisticated critique. Focus on personal style development, conceptual thinking, and intentional artistic choices.",
+    "3-5": `【当前孩子年龄段：3-5岁 象征期】
+
+蔺老师家庭美育·象征期发展特征：
+- 孩子开始把图形与经验连接，解释可能前后变化——这是正常的探索过程。
+- 线条和形状开始具有象征意义（一个圆圈可能是太阳、人脸或饼干）。
+- 对颜色选择更多凭直觉和喜好，而非写实。
+- 手部精细动作仍在发展中，线条可能不稳定、用力不均。
+- 自我中心表达：画面围绕"我"展开（我的家人、我去过的地方、我喜欢的）。
+
+家长引导重点：
+- 用"可以给我介绍一下你的画吗？"代替"你画的是什么？"（保护表达欲，不要求命名）。
+- 以"我"为中心拓展主题：我的身体、我的家人、我今天去了哪里、我喜欢的动物。
+- 不说"像不像"、不比较、不示范让孩子照着画。
+- 关注线条和动作：可以说"你这条线很长""这里绕成了一个圈圈"。
+- 提供大纸和安全无毒的材料，建立固定创作区。
+- 孩子说"我不会画"时，先鼓励，再一起观察特征和形状——不代劳。
+
+分析这幅画时请参照以上年龄特征，重点关注：自发性、情绪表达、象征符号的出现、手部控制的发展过程。`,
+
+    "5-8": `【当前孩子年龄段：5-8岁 意向表现期】
+
+蔺老师家庭美育·意向表现期发展特征：
+- 孩子会画基本特征，开始在意可识别性，但仍保持强烈的个人表达。
+- 空间组织开始出现：基底线、天空线、排列式构图。
+- 叙事能力增强，愿意用画讲故事——画面中开始出现事件、关系和情节。
+- 对细节的兴趣增加，可能反复画同一主题（如公主、汽车、恐龙）不断深入。
+- 开始形成自己的符号系统，可能一段时间只画黑白或偏爱某种颜色。
+- 对"画得好不好"开始有自我意识，可能因不满意而擦改或放弃。
+
+家长引导重点：
+- 在家展示孩子作品，像对待艺术家的作品一样认真看待——装裱、标注日期。
+- 用"谁、何时、何地、与谁、做什么"拓展场景主题，但不打断孩子的专注。
+- 反馈孩子最仔细、最感兴趣、最有动作或故事感的部分（指出具体细节）。
+- 如果孩子一段时间只画一个主题（如只画恐龙、只画公主），这是聚焦型学习风格——不要强行纠正，而是提供更丰富的相关资源深化探索。
+- 避免说"你这里画错了""怎么不画颜色"——发展中状态不是能力缺失。
+- 接纳差异化：有的孩子擅长形体、有的对色彩敏感、有的乐于改造再设计。
+
+分析这幅画时请参照以上年龄特征，重点关注：叙事意图、空间组织尝试、主题聚焦度、细节投入程度、创意选择。`,
+
+    "8-12": `【当前孩子年龄段：8-12岁 写实期】
+
+蔺老师家庭美育·写实期发展特征：
+- 孩子开始追求视觉真实感：关注比例、遮挡、透视、光影。
+- 可能变得自我批评，"我画得不像"是常见情绪——需要保护艺术自信。
+- 能够处理更复杂的构图、细节和技法。
+- 个人风格开始萌芽：偏好某些主题、媒介、表现方式。
+- 可能已经形成简笔画套路（来自学校或同伴影响），需要温和引导回到观察和真实表达。
+- 对他人评价更敏感，父母反馈方式需要从"表扬"升级为"具体观察+信任"。
+
+家长引导重点：
+- 反馈要慎重，以鼓励为主同时给具体建议——指出细节和进步，不空洞说"很好"。
+- 不简单说"真棒"，要描述看到的具体内容："这个人物你画了手指的关节，你观察得很仔细。"
+- 如果孩子已经形成简笔画套路（如固定画法的大眼睛、标准笑容），不批评——先肯定模仿能力，再鼓励观察真实生活中喜欢的人事物。
+- 提供更丰富的工具（素描铅笔、水彩、丙烯、数位板），让技术成长有空间。
+- 带孩子看展览、画册、真实自然——输入决定输出。
+- 保护表达欲永远优先于技术纠正。
+
+分析这幅画时请参照以上年龄特征，重点关注：写实尝试、细节观察力、比例和空间意识、个人风格倾向、技术发展水平和艺术自信的保护需求。`,
+
+    "12+": `【当前孩子年龄段：12岁以上 专业发展期】
+
+蔺老师家庭美育·专业发展期特征：
+- 青春期孩子可以处理抽象概念、复杂技法和个人表达。
+- 艺术可能成为自我认同的重要部分，作品承载更深的思考和情感。
+- 对外界评价高度敏感，需要专业而温暖的引导。
+- 可以讨论艺术史、风格流派、创作理念等更深层话题。
+- 技术训练和个人风格发展需要平衡——技法为表达服务。
+
+分析这幅画时请参照以上年龄特征，重点关注：个人风格发展、概念思维深度、技法成熟度、情感表达的复杂性。`,
   };
   const ageInfo = ageMap[childAge] || ageMap["5-8"];
-  return "IMPORTANT CONTEXT: " + ageInfo + " Adjust ALL analysis fields accordingly — teacherCopy, tags, principles, nextSteps, skeleton, colorPlan, and strengthAnalysis should reflect age-appropriate expectations.";
+  return "=== 年龄阶段背景（必须严格据此调整分析）===\n" + ageInfo + "\n\n请确保 teacherCopy、nextSteps、colorPlan 以及所有分析内容都与这个年龄段的发展特征和家长引导重点精准对齐。";
 }
 
 function buildResponsesPayload(image, childAge) {
@@ -1960,28 +1872,12 @@ async function analyzeWithAI(image, childAge) {
   const payload = useChatCompletions
     ? buildChatPayload(image, childAge)
     : buildResponsesPayload(image, childAge);
+  const result = await requestProviderJson(url, payload, apiKey);
 
-  // 尝试多个模型，防止单模型饱和
-  const fallbackModels = ["gpt-4o-mini", "qwen-plus-2025-12-01", "deepseek-v3-250324", "gpt-5-2025-08-07"];
-  let lastError = null;
-
-  for (const model of [MODEL, ...fallbackModels.filter(m => m !== MODEL)]) {
-    try {
-      const modelPayload = { ...payload, model };
-      const result = await requestProviderJson(url, modelPayload, apiKey);
-      const outputText = useChatCompletions
-        ? extractChatOutputText(result)
-        : extractOutputText(result);
-      return normalizeAnalysis(parseJsonObject(outputText));
-    } catch (e) {
-      lastError = e;
-      if (e.statusCode === 429 || /saturated|busy|饱和/i.test(e.message || "")) {
-        continue; // 尝试下一个模型
-      }
-      throw e; // 非负载问题直接抛出
-    }
-  }
-  throw lastError || new Error("all_models_failed");
+  const outputText = useChatCompletions
+    ? extractChatOutputText(result)
+    : extractOutputText(result);
+  return normalizeAnalysis(parseJsonObject(outputText));
 }
 
 async function analyzeStyleWithAI(image, variant) {
@@ -2157,30 +2053,6 @@ async function handleAdminGenInvite(request, response) {
   }
 }
 
-async function handleAdminExportData(request, response) {
-  if (!checkAdmin(request, response)) return;
-  try {
-    const data = {
-      users: readJSON(USERS_FILE),
-      orders: readJSON(ORDERS_FILE),
-      records: readJSON(RECORDS_FILE),
-      inviteCodes: readJSON(INVITE_FILE),
-      exportedAt: new Date().toISOString(),
-    };
-    // 同时保存到 repo 备份目录
-    try {
-      if (!fs.existsSync(REPO_DATA_DIR)) fs.mkdirSync(REPO_DATA_DIR, { recursive: true });
-      writeJSON(path.join(REPO_DATA_DIR, "users.json"), data.users);
-      writeJSON(path.join(REPO_DATA_DIR, "orders.json"), data.orders);
-      writeJSON(path.join(REPO_DATA_DIR, "records.json"), data.records);
-      writeJSON(path.join(REPO_DATA_DIR, "invite-codes.json"), data.inviteCodes);
-    } catch (e) { console.log("[export] backup save failed:", e.message); }
-    sendJson(response, 200, data);
-  } catch {
-    sendJson(response, 500, { error: "导出失败" });
-  }
-}
-
 async function handleAdminResetPassword(request, response) {
   if (!checkAdmin(request, response)) return;
   try {
@@ -2192,10 +2064,7 @@ async function handleAdminResetPassword(request, response) {
       return;
     }
     const user = getUserByEmail(email);
-    if (!user) {
-      sendJson(response, 404, { error: "用户不存在" });
-      return;
-    }
+    if (!user) { sendJson(response, 404, { error: "用户不存在" }); return; }
     const { hash, salt } = hashPassword(newPassword);
     const users = getUsers();
     users[user.id].passwordHash = hash;
@@ -2203,9 +2072,7 @@ async function handleAdminResetPassword(request, response) {
     saveUsers(users);
     writeServerLog("password_reset", { email });
     sendJson(response, 200, { ok: true, email });
-  } catch {
-    sendJson(response, 400, { error: "请求格式错误" });
-  }
+  } catch { sendJson(response, 400, { error: "请求格式错误" }); }
 }
 
 async function handleRegister(request, response) {
@@ -2456,7 +2323,7 @@ async function handlePaymentCallback(request, response) {
 // ──────────── 路由处理：分析记录 ────────────
 
 async function handleSaveRecord(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2483,7 +2350,7 @@ async function handleSaveRecord(request, response) {
 }
 
 async function handleGetRecords(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2877,6 +2744,68 @@ const MIME_TYPES = {
   ".woff2": "font/woff2",
 };
 
+// ===== 一键上色 =====
+async function handleColorizeImage(request, response) {
+  const auth = getAuthOrGuest(request);
+  if (!auth) { sendJson(response, 401, { error: "请先登录" }); return; }
+  try {
+    const rawBody = await readBody(request);
+    const body = JSON.parse(rawBody);
+    const image = body?.image;
+    if (typeof image !== "string" || !image.startsWith("data:image/")) {
+      sendJson(response, 400, { error: "invalid_image" }); return;
+    }
+    const { buffer, extension, mimeType } = parseDataUrl(image);
+    const colorPrompt = "Add child-friendly coloring to this line drawing. Use warm, harmonious colors. Preserve ALL original lines - do not erase or cover any lines. Color gently within existing outlines. Keep hand-drawn childlike quality. Crayon or colored-pencil texture. Only add color, no new objects.";
+    
+    // Try multiple models
+    const modelsToTry = ["qwen-image-edit-2509", "gpt-image-1.5", "gpt-image-1", "flux.1-kontext-pro", "gpt-image-2"];
+    let lastError = null;
+    
+    for (const model of modelsToTry) {
+      try {
+        const fields = { model, n: "1", prompt: colorPrompt, size: "1024x1024" };
+        const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
+        const multipart = buildMultipartBody({ fields, file });
+        const upstream = await fetch(`${AI_BASE_URL}/images/edits`, {
+          body: multipart.body, headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": multipart.contentType }, method: "POST",
+        });
+        const result = { ok: upstream.ok, result: await upstream.json().catch(() => ({})), status: upstream.status };
+        if (result.ok) {
+          const genImg = extractGeneratedImage(result.result);
+          if (genImg) {
+            writeServerLog("colorize_success", { model });
+            sendJson(response, 200, { image: genImg, model, source: "ai" });
+            return;
+          }
+          lastError = new Error("empty_image_result");
+        } else {
+          lastError = new Error(getImageErrorMessage(result.result));
+          writeServerLog("colorize_model_failed", { model, error: lastError.message, status: result.status });
+        }
+      } catch (e) {
+        lastError = e;
+        writeServerLog("colorize_model_error", { model, error: e.message });
+        // Try PowerShell fallback
+        try {
+          const fields = { model, n: "1", prompt: colorPrompt, size: "1024x1024" };
+          const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
+          const psResult = await requestImageEditWithPowerShell({ apiKey: API_KEY, fields, file });
+          if (psResult.ok) {
+            const genImg = extractGeneratedImage(psResult.result);
+            if (genImg) {
+              writeServerLog("colorize_success_ps", { model });
+              sendJson(response, 200, { image: genImg, model, source: "ai" });
+              return;
+            }
+          }
+        } catch {}
+      }
+    }
+    sendJson(response, 500, { error: lastError?.message || "所有模型上色均失败，请稍后重试" });
+  } catch { sendJson(response, 400, { error: "请求格式错误" }); }
+}
+
 function serveStatic(request, response) {
   let urlPath = request.url.split("?")[0].split("#")[0];
   if (urlPath === "/") urlPath = "/index.html";
@@ -2929,7 +2858,7 @@ const server = http.createServer((request, response) => {
 
   // ── 公开配置 ──
   if (request.method === "GET" && request.url === "/api/config") {
-    sendJson(response, 200, { freeMode: FREE_MODE, unitPrice: CREDIT_UNIT_PRICE, version: "v2-auth" });
+    sendJson(response, 200, { freeMode: FREE_MODE, unitPrice: CREDIT_UNIT_PRICE });
     return;
   }
 
@@ -2945,9 +2874,6 @@ const server = http.createServer((request, response) => {
   }
   if (request.method === "POST" && (request.url === "/api/admin/gen-invite" || request.url.startsWith("/api/admin/gen-invite?"))) {
     handleAdminGenInvite(request, response); return;
-  }
-  if (request.method === "GET" && (request.url === "/api/admin/export-data" || request.url.startsWith("/api/admin/export-data?"))) {
-    handleAdminExportData(request, response); return;
   }
   if (request.method === "POST" && (request.url === "/api/admin/reset-password" || request.url.startsWith("/api/admin/reset-password?"))) {
     handleAdminResetPassword(request, response); return;
@@ -3003,6 +2929,9 @@ const server = http.createServer((request, response) => {
   }
   if (request.method === "POST" && request.url === "/api/generate-turnaround") {
     handleGenerateTurnaround(request, response); return;
+  }
+  if (request.method === "POST" && request.url === "/api/colorize-image") {
+    handleColorizeImage(request, response); return;
   }
 
   serveStatic(request, response);
