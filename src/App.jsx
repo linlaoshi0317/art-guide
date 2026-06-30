@@ -152,11 +152,17 @@ export function App() {
           <button onClick={runGuidance} disabled={gStatus === "generating" || !preview || !childAge} style={gStatus === "generating" || !preview || !childAge ? st.btnDisabled : st.btnPrimary}>{!childAge && preview ? "请先选择年龄段" : gStatus === "generating" ? <><RefreshCcw size={18} className="spinning" />{C.guideGenerating}</> : <><Sparkles size={18} />{C.guideAction}</>}</button></div>
         {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>3</span> 对比结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div>
           {gResults.length > 0 && gResults[0].colorized ? <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ textAlign: "center" }}><div style={{ ...st.compareLabel, color: "#b8a99a" }}>优化线稿</div><img src={gResults[0].lineArtImage} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].lineArtImage, title: "优化线稿" })} /><a href={gResults[0].lineArtImage} download="优化线稿.png" style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存</a></div>
-              <div style={{ textAlign: "center" }}><div style={{ ...st.compareLabel, color: "#E07B39" }}>上色效果</div><img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: "上色效果" })} /><a href={gResults[0].image} download="上色效果.png" style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存</a></div>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <div style={{ ...st.compareLabel, color: "#b8a99a", marginBottom: 6 }}>📐 优化线稿</div>
+              <img src={gResults[0].lineArtImage} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].lineArtImage, title: "优化线稿" })} />
+              <a href={gResults[0].lineArtImage} download="优化线稿.png" style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存线稿</a>
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}><span style={{ ...st.compareLabel, margin: 0 }}>{C.original}</span><span style={{ color: "#d4c8b8" }}>→</span><span style={{ ...st.compareLabel, margin: 0 }}>优化后</span></div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ ...st.compareLabel, color: "#E07B39", marginBottom: 6 }}>🎨 上色效果</div>
+              <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: "上色效果" })} />
+              <a href={gResults[0].image} download="上色效果.png" style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存上色图</a>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f0ebe0" }}><span style={{ ...st.compareLabel, margin: 0 }}>{C.original}</span><span style={{ color: "#d4c8b8" }}>→</span><span style={{ ...st.compareLabel, margin: 0, color: "#E07B39" }}>优化后</span></div>
           </> : <>
             <div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div>{gResults.length > 0 ? <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}</div></div>
           </>}
@@ -296,10 +302,14 @@ export function App() {
       {/* Optimized Image(s) */}
       {gResults.length > 0 && <div style={{ marginBottom: 24 }}>
         {gResults[0].colorized && gResults[0].lineArtImage ? <>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 6, letterSpacing: "0.04em" }}>线稿</div><img src={gResults[0].lineArtImage} alt="" style={{ width: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} /></div>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#E07B39", fontWeight: 600, marginBottom: 6, letterSpacing: "0.04em" }}>上色效果</div><img src={gResults[0].image} alt="" style={{ width: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} /></div>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
+          <div style={{ textAlign: "center", marginBottom: 18 }}>
+            <div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>📐 优化线稿</div>
+            <img src={gResults[0].lineArtImage} alt="" style={{ maxWidth: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 4 }} />
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "#E07B39", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>🎨 上色效果</div>
+            <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} />
           </div>
         </> : <>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
