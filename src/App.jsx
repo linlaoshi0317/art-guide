@@ -130,7 +130,7 @@ export function App() {
 
   function isLineArt(imgSrc) { return new Promise((resolve) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = 96; c.height = 96; const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, 96, 96); const d = ctx.getImageData(0, 0, 96, 96).data; let sat = 0, count = 0; for (let i = 0; i < d.length; i += 16) { const r = d[i], g = d[i+1], b = d[i+2]; const mx = Math.max(r,g,b), mn = Math.min(r,g,b); if (mx > 30) { sat += mx === 0 ? 0 : (mx-mn)/mx; count++; } } const avgSat = count > 0 ? (sat/count) : 0; resolve(avgSat < 0.25); }; img.onerror = () => resolve(false); img.src = imgSrc; }); }
 
-  async function runColorize() { if (gResults.length === 0) return; setCStatus("colorizing"); try { const data = await API("/api/colorize-image", { image: gResults[0].image }); const newResults = [{ ...gResults[0], image: data.image, colorized: true }]; setGResults(newResults); setCStatus("done"); setGHistory(h => { const updated = [...h]; if (updated.length > 0) updated[0] = { ...updated[0], generatedImage: data.image }; return updated; }); } catch (e) { setCStatus("idle"); alert("上色失败：" + (e.message || "请重试")); } }
+  async function runColorize() { if (gResults.length === 0) return; setCStatus("colorizing"); try { const lineArt = gResults[0].image; const data = await API("/api/colorize-image", { image: lineArt }); const newResults = [{ ...gResults[0], image: data.image, lineArtImage: lineArt, colorized: true }]; setGResults(newResults); setCStatus("done"); setGHistory(h => { const updated = [...h]; if (updated.length > 0) updated[0] = { ...updated[0], generatedImage: data.image, lineArtImage: lineArt }; return updated; }); } catch (e) { setCStatus("idle"); alert("上色失败：" + (e.message || "请重试")); } }
 
   async function handleAuth() { setAuthError(""); setAuthLoading(true); try { const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login"; const body = authMode === "register" ? { email: authEmail, password: authPassword, inviteCode: authInviteCode } : { email: authEmail, password: authPassword }; const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) { setAuthError(data.error || "操作失败"); return; } setAuthToken(data.token); setAuthUser(data.user); localStorage.setItem("art_token", data.token); setShowSettings(false); } catch { setAuthError("网络错误"); } finally { setAuthLoading(false); } }
   function handleLogout() { setAuthToken(""); setAuthUser(null); localStorage.removeItem("art_token"); }
@@ -283,8 +283,19 @@ export function App() {
         </div>
       </div>}
 
-      {/* Optimized Image */}
-      {gResults.length > 0 && <div style={{ marginBottom: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3><img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} /></div>}
+      {/* Optimized Image(s) */}
+      {gResults.length > 0 && <div style={{ marginBottom: 24 }}>
+        {gResults[0].colorized && gResults[0].lineArtImage ? <>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 6, letterSpacing: "0.04em" }}>线稿</div><img src={gResults[0].lineArtImage} alt="" style={{ width: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} /></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#E07B39", fontWeight: 600, marginBottom: 6, letterSpacing: "0.04em" }}>上色效果</div><img src={gResults[0].image} alt="" style={{ width: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} /></div>
+          </div>
+        </> : <>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
+          <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
+        </>}
+      </div>}
 
       {/* Footer */}
       <div style={{ paddingTop: 20, borderTop: "2px solid #f0ebe0", textAlign: "center" }}><p style={{ fontSize: 12, color: "#b8a99a", margin: 0, fontStyle: "italic" }}>{C.strengthClosing}</p></div>
