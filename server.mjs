@@ -382,123 +382,94 @@ const labels = {
 const responseSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["teacherCopy", "tags", "skeleton", "nextSteps", "colorPlan", "strengthAnalysis"],
+  required: ["teacherCopy", "psychologyAnalysis", "familyEducation", "projectionAnalysis", "talentInsight"],
   properties: {
     teacherCopy: {
       type: "string",
-      description:
-        "A warm Simplified Chinese teacher note, 70-120 Chinese characters.",
+      description: "温暖简短的老师点评（60-100字）。先描述一个画面具体细节，再给一句鼓励。禁止模板话术。禁止说'画得像不像/好不好'。",
     },
-    tags: {
-      type: "array",
-      minItems: 3,
-      maxItems: 5,
-      items: { type: "string" },
-    },
-    skeleton: {
+    psychologyAnalysis: {
       type: "object",
       additionalProperties: false,
-      required: ["visualCenter", "flowLine", "balance", "depth"],
+      required: ["emotionState", "securityLevel", "selfCognition", "keyEvidence"],
       properties: {
-        visualCenter: { type: "string" },
-        flowLine: { type: "string" },
-        balance: { type: "string" },
-        depth: { type: "string" },
-      },
-    },
-    nextSteps: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: { type: "string" },
-    },
-    colorPlan: {
-      type: "object",
-      additionalProperties: false,
-      required: ["summary", "palette", "focus", "steps"],
-      properties: {
-        summary: {
+        emotionState: {
           type: "string",
-          description:
-            "A warm Simplified Chinese color direction, 40-80 Chinese characters.",
+          description: "【情绪状态分析】基于色彩+线条+内容三维度判断。必须引用画面具体证据。参考框架：红色/尖锐线条=情绪激烈，蓝色/柔和线条=沉静，黑色大量+阴郁内容=需关注。格式：'色彩上[证据]，线条上[证据]，内容上[证据]→综合判断情绪状态为[状态]。'",
         },
-        palette: {
-          type: "array",
-          minItems: 4,
-          maxItems: 6,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["name", "hex", "usage"],
-            properties: {
-              name: { type: "string" },
-              hex: {
-                type: "string",
-                pattern: "^#[0-9A-Fa-f]{6}$",
-              },
-              usage: { type: "string" },
-            },
-          },
+        securityLevel: {
+          type: "string",
+          description: "【安全感评估】基于布局+人物大小+环境元素判断。参考：画面极小在角落=缺乏安全感；居中饱满=安全感足；画保护者=渴望被保护；太阳/房子缺位=需关注。格式：'布局上[证据]，人物表现上[证据]→安全感状态为[评估]。'",
         },
-        focus: {
+        selfCognition: {
+          type: "string",
+          description: "【自我认知分析】基于画自己的方式判断。参考：身体完整色彩丰富=自我整合良好；缺少部位=某方面否定；把自己画很大=自信；很小=自我评价低。格式：'[具体画面证据]→自我认知表现为[分析]。'",
+        },
+        keyEvidence: {
           type: "array",
-          minItems: 3,
+          minItems: 2,
           maxItems: 4,
           items: { type: "string" },
-        },
-        steps: {
-          type: "array",
-          minItems: 3,
-          maxItems: 4,
-          items: { type: "string" },
+          description: "支撑以上判断的关键画面证据清单，每条必须标注画面位置。",
         },
       },
     },
-    strengthAnalysis: {
+    familyEducation: {
       type: "object",
       additionalProperties: false,
-      required: ["psychology", "development", "familyEducation", "talentType", "talentDesc", "projectionObservations"],
+      required: ["parentInterference", "strengthPotential", "actionSuggestions"],
       properties: {
-        psychology: {
+        parentInterference: {
           type: "string",
-          description: "【禁止模板】必须引用画面具体视觉元素（位置+内容+特征），再基于证据做心理学推断。格式：'画面中[位置]的[内容]呈现出[特征]——这可能说明[推断]。' 严禁写'探索世界''表达内心''每个孩子都是独特的'等万能话。",
+          description: "【家长可能的干扰】基于蔺老师公式'表现=优势-干扰-内耗'，从画面痕迹推断家长可能存在的干扰行为（如催促、比较、过度指导、用'像不像'评价等）。格式：'画面中[具体痕迹]可能说明家长存在[干扰类型]→这会导致孩子[内耗表现]。'",
         },
-        development: {
+        strengthPotential: {
           type: "string",
-          description: "【禁止模板】必须引用画面中具体的发展指标（比例/细节/空间组织/符号使用），判断发展阶段，给出具体建议。格式：'画面中[具体表现]说明孩子已掌握[具体能力]，处于[发展阶段]。' 严禁写'正在发展''需要时间''每个孩子不同'等万能话。",
+          description: "【优势潜能发现】基于四个观察线索（成功体验/事前渴望/过程投入/事后满足）和天赋识别，指出孩子在这幅画中展现的优势方向。格式：'从[画面证据]可以看出孩子在[某方面]有优势潜能。'",
         },
-        familyEducation: {
-          type: "string",
-          description: "【禁止模板】必须引用画面中可观察的具体痕迹（修改/专注/创意选择），联系蔺老师公式'表现=优势-干扰-内耗'分析，给出2-3条可今晚执行的具体行动。格式：'画面中[具体痕迹]说明[状态]→建议家长[具体行动]。' 严禁写'多鼓励''营造氛围''接纳孩子'等万能话。",
-        },
-        talentType: {
-          type: "string",
-          description: "【蔺老师家庭美育·12种绘画天赋】必须基于画面内容和过程痕迹综合判断。①情感能力(表情丰富/情绪氛围/情感互动)②专注力(精细细节/心流痕迹/长时间投入)③耐力持续力(规模大/完成度高/反复修改)④故事天赋(叙事场景/分镜/角色互动)⑤设计天赋(改造美化/装饰纹样/创意设计)⑥幽默天赋(搞笑情节/夸张造型/有趣创意)⑦画动物天赋(动物生动传神/抓住特征/动物共情)⑧色彩天赋(用色大胆/情绪配色/色彩有个人风格)⑨数学智能(数量精确/规律图案/几何排列)⑩逻辑智能(因果清楚/结构合理/有条理)⑪空间智能(透视遮挡/远近大小/立体感)⑫机械智能(机械结构/内部构造/功能理解)。",
-        },
-        talentDesc: {
-          type: "string",
-          description: "【禁止概括】格式：'主导天赋：[类型]。画面证据：①[位置]的[元素]呈现[特征]→说明[天赋]。②...③...' 至少引用3个画面位置。严禁不标注位置。严禁写'展现了良好的''体现了'等模板话术。必须有位置+内容+特征+分析四要素。",
-        },
-        talentManifestations: {
+        actionSuggestions: {
           type: "array",
           minItems: 3,
           maxItems: 5,
           items: { type: "string" },
-          description: "【禁止概括】每条格式：'[画面位置]：[具体描述看到的]→[这个画面选择说明什么]' 必须以位置开头。3-5条，每条指向画面不同的具体位置。严禁模板话术。",
+          description: "给家长的3-5条具体行动建议。必须是今晚就能做的小行动。禁止写'多鼓励''营造氛围''接纳孩子'等万能话。每条要对应画面具体内容。",
         },
-        projectionObservations: {
+      },
+    },
+    projectionAnalysis: {
+      type: "object",
+      additionalProperties: false,
+      required: ["attentionProjection", "relationshipProjection", "needProjection"],
+      properties: {
+        attentionProjection: {
+          type: "string",
+          description: "【注意力投射】孩子近期关注什么，画里就反复出现什么。引用画面中占比最大/细节最多的元素。格式：'画面中[占比最大/细节最多的元素]说明孩子近期注意力集中在[某方面]。'",
+        },
+        relationshipProjection: {
+          type: "string",
+          description: "【关系投射】画中人物的大小/距离/完整性投射孩子的人际关系感知。参考：谁最大=最重要，谁被漏画=关系疏离，谁第一个画=心中最亲近。格式：'画面中[人物关系特征]投射出[关系感知]。'",
+        },
+        needProjection: {
+          type: "string",
+          description: "【需求投射】画中的超级英雄/保护者/特殊角色投射孩子的内心需求（保护/力量/关注/自由等）。格式：'画面中[角色/元素]可能投射孩子对[需求]的渴望。'",
+        },
+      },
+    },
+    talentInsight: {
+      type: "object",
+      additionalProperties: false,
+      required: ["primaryTalent", "evidenceList"],
+      properties: {
+        primaryTalent: {
+          type: "string",
+          description: "【主导天赋识别】从蔺老师12种天赋中选择最匹配的1种。格式：'主导天赋：[天赋名称]。判定理由：①[画面证据]→②[过程痕迹推断]→③[两者共同指向该天赋]。'",
+        },
+        evidenceList: {
           type: "array",
           minItems: 2,
           maxItems: 4,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["label", "text"],
-            properties: {
-              label: { type: "string", description: "投射维度名称，从蔺老师课程投射体系中选择：注意力投射、成长投射、象征投射、共鸣投射、需求投射、位置投射、好恶投射、生理投射。" },
-              text: { type: "string", description: "【禁止模板】基于这幅具体画面的投射观察。格式：'画面中[具体位置]的[具体内容]选择了[具体方式]——这可能投射了[推断]。' 严禁万能话。" },
-            },
-          },
+          items: { type: "string" },
+          description: "天赋证据清单。每条格式：'[画面位置]的[具体元素]→说明[天赋表现]'。必须标注位置。",
         },
       },
     },
@@ -1106,134 +1077,34 @@ function normalizeAnalysis(value) {
     throw new Error("invalid_analysis");
   }
 
-  const tags = Array.isArray(value.tags)
-    ? value.tags.filter((item) => typeof item === "string" && item.trim()).slice(0, 5)
-    : [];
-  const nextSteps = Array.isArray(value.nextSteps)
-    ? value.nextSteps.filter((item) => typeof item === "string" && item.trim()).slice(0, 3)
-    : [];
-  const skeleton = value.skeleton && typeof value.skeleton === "object" ? value.skeleton : {};
-  const colorPlan = value.colorPlan && typeof value.colorPlan === "object" ? value.colorPlan : {};
-  const palette = Array.isArray(colorPlan.palette)
-    ? colorPlan.palette
-        .filter((item) => item && typeof item === "object")
-        .slice(0, 6)
-        .map((item) => ({
-          hex:
-            typeof item.hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(item.hex)
-              ? item.hex
-              : "#F3C96B",
-          name:
-            typeof item.name === "string" && item.name.trim()
-              ? item.name.trim()
-              : "\u4e3b\u8272",
-          usage:
-            typeof item.usage === "string" && item.usage.trim()
-              ? item.usage.trim()
-              : "\u7528\u5728\u753b\u9762\u4e3b\u89d2\u4e0a\u3002",
-        }))
-    : [];
-  const colorFocus = Array.isArray(colorPlan.focus)
-    ? colorPlan.focus.filter((item) => typeof item === "string" && item.trim()).slice(0, 4)
-    : [];
-  const colorSteps = Array.isArray(colorPlan.steps)
-    ? colorPlan.steps.filter((item) => typeof item === "string" && item.trim()).slice(0, 4)
-    : [];
-
-  const strengthAnalysis = value.strengthAnalysis && typeof value.strengthAnalysis === "object"
-    ? value.strengthAnalysis
-    : null;
-
-  const normalizedStrength = strengthAnalysis ? {
-    psychology: typeof strengthAnalysis.psychology === "string" && strengthAnalysis.psychology.trim()
-      ? strengthAnalysis.psychology.trim()
-      : null,
-    development: typeof strengthAnalysis.development === "string" && strengthAnalysis.development.trim()
-      ? strengthAnalysis.development.trim()
-      : null,
-    familyEducation: typeof strengthAnalysis.familyEducation === "string" && strengthAnalysis.familyEducation.trim()
-      ? strengthAnalysis.familyEducation.trim()
-      : null,
-    talentType: typeof strengthAnalysis.talentType === "string" && strengthAnalysis.talentType.trim()
-      ? strengthAnalysis.talentType.trim()
-      : null,
-    talentDesc: typeof strengthAnalysis.talentDesc === "string" && strengthAnalysis.talentDesc.trim()
-      ? strengthAnalysis.talentDesc.trim()
-      : null,
-    talentManifestations: Array.isArray(strengthAnalysis.talentManifestations)
-      ? strengthAnalysis.talentManifestations.filter((item) => typeof item === "string" && item.trim()).slice(0, 5)
-      : [],
-    projectionObservations: Array.isArray(strengthAnalysis.projectionObservations)
-      ? strengthAnalysis.projectionObservations
-          .filter((item) => item && typeof item.label === "string" && typeof item.text === "string")
-          .slice(0, 4)
-      : [],
-  } : null;
+  const pa = value.psychologyAnalysis && typeof value.psychologyAnalysis === "object" ? value.psychologyAnalysis : {};
+  const fe = value.familyEducation && typeof value.familyEducation === "object" ? value.familyEducation : {};
+  const pr = value.projectionAnalysis && typeof value.projectionAnalysis === "object" ? value.projectionAnalysis : {};
+  const ti = value.talentInsight && typeof value.talentInsight === "object" ? value.talentInsight : {};
 
   return {
-    teacherCopy:
-      typeof value.teacherCopy === "string" && value.teacherCopy.trim()
-        ? value.teacherCopy.trim()
-        : "\u8fd9\u5f20\u753b\u5df2\u7ecf\u6709\u5f88\u597d\u7684\u89c2\u5bdf\uff0c\u4e0b\u4e00\u6b65\u53ef\u4ee5\u628a\u4e3b\u89d2\u548c\u753b\u9762\u5173\u7cfb\u518d\u6574\u7406\u5f97\u66f4\u6e05\u695a\u3002",
-    tags: tags.length >= 3 ? tags : ["\u89c2\u5bdf\u8ba4\u771f", "\u4e3b\u4f53\u660e\u786e", "\u53ef\u4ee5\u7ee7\u7eed\u4f18\u5316"],
-    principles: normalizePrinciples(value.principles),
-    strengthAnalysis: normalizedStrength,
-    skeleton: {
-      visualCenter:
-        typeof skeleton.visualCenter === "string" && skeleton.visualCenter.trim()
-          ? skeleton.visualCenter.trim()
-          : "\u5148\u627e\u5230\u753b\u9762\u6700\u60f3\u8ba9\u4eba\u770b\u89c1\u7684\u4e3b\u89d2\u3002",
-      flowLine:
-        typeof skeleton.flowLine === "string" && skeleton.flowLine.trim()
-          ? skeleton.flowLine.trim()
-          : "\u7528\u4e00\u6761\u65b9\u5411\u7ebf\u628a\u89c6\u7ebf\u5e26\u56de\u4e3b\u89d2\u3002",
-      balance:
-        typeof skeleton.balance === "string" && skeleton.balance.trim()
-          ? skeleton.balance.trim()
-          : "\u5de6\u53f3\u6216\u4e0a\u4e0b\u9700\u8981\u6709\u56de\u5e94\u5173\u7cfb\u3002",
-      depth:
-        typeof skeleton.depth === "string" && skeleton.depth.trim()
-          ? skeleton.depth.trim()
-          : "\u524d\u666f\u3001\u4e2d\u666f\u3001\u80cc\u666f\u53ef\u4ee5\u5206\u5f97\u66f4\u6e05\u695a\u3002",
+    teacherCopy: typeof value.teacherCopy === "string" && value.teacherCopy.trim()
+      ? value.teacherCopy.trim()
+      : "这张作品已经有了很好的观察，每个孩子都有自己独特的表达方式。",
+    psychologyAnalysis: {
+      emotionState: typeof pa.emotionState === "string" ? pa.emotionState.trim() : "",
+      securityLevel: typeof pa.securityLevel === "string" ? pa.securityLevel.trim() : "",
+      selfCognition: typeof pa.selfCognition === "string" ? pa.selfCognition.trim() : "",
+      keyEvidence: Array.isArray(pa.keyEvidence) ? pa.keyEvidence.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
     },
-    nextSteps:
-      nextSteps.length === 3
-        ? nextSteps
-        : [
-            "\u5148\u5708\u51fa\u4e3b\u89d2\u5e76\u52a0\u91cd\u8f6e\u5ed3",
-            "\u628a\u76f8\u5173\u5143\u7d20\u9760\u8fd1\u653e\u6210\u4e00\u7ec4",
-            "\u91cd\u590d\u4e00\u4e2a\u6709\u8da3\u7684\u5f62\u72b6",
-          ],
-    colorPlan: {
-      summary:
-        typeof colorPlan.summary === "string" && colorPlan.summary.trim()
-          ? colorPlan.summary.trim()
-          : "\u5148\u786e\u5b9a\u4e3b\u89d2\u7684\u4e3b\u8272\uff0c\u518d\u7528\u5c0f\u9762\u79ef\u4eae\u8272\u63d0\u5347\u753b\u9762\u5b8c\u6210\u5ea6\u3002",
-      palette:
-        palette.length >= 4
-          ? palette
-          : [
-              { hex: "#F4C76A", name: "\u6696\u91d1\u8272", usage: "\u7528\u5728\u5934\u53d1\u6216\u4e3b\u89d2\u6700\u4eae\u7684\u90e8\u5206\u3002" },
-              { hex: "#F7D8C6", name: "\u80a4\u8272", usage: "\u7528\u5728\u8138\u90e8\u548c\u624b\u90e8\u7684\u5e95\u8272\u3002" },
-              { hex: "#1E2B4A", name: "\u6df1\u84dd\u8272", usage: "\u7528\u5728\u670d\u88c5\u6216\u91cd\u8272\u533a\u57df\u3002" },
-              { hex: "#6E8FC7", name: "\u6e05\u84dd\u8272", usage: "\u7528\u5728\u773c\u775b\u6216\u5c0f\u88c5\u9970\u4e0a\u3002" },
-            ],
-      focus:
-        colorFocus.length >= 3
-          ? colorFocus
-          : [
-              "\u4e3b\u89d2\u7684\u5934\u53d1\u548c\u773c\u775b\u5148\u786e\u5b9a\u8272\u5f69\u6027\u683c\u3002",
-              "\u670d\u88c5\u7528\u8f83\u6df1\u7684\u989c\u8272\u538b\u4f4f\u753b\u9762\u91cd\u5fc3\u3002",
-              "\u5c0f\u89d2\u8272\u548c\u9053\u5177\u7528\u5c11\u91cf\u4eae\u8272\u505a\u547c\u5e94\u3002",
-            ],
-      steps:
-        colorSteps.length >= 3
-          ? colorSteps
-          : [
-              "\u5148\u94fa\u5927\u8272\u5757\uff0c\u4e0d\u8981\u628a\u7ebf\u6761\u5168\u90e8\u76d6\u4f4f\u3002",
-              "\u518d\u52a0\u6697\u90e8\uff0c\u8ba9\u5934\u53d1\u3001\u8863\u670d\u548c\u8138\u90e8\u5206\u5f00\u3002",
-              "\u6700\u540e\u52a0\u773c\u775b\u9ad8\u5149\u548c\u5c0f\u88c5\u9970\u4eae\u70b9\u3002",
-            ],
+    familyEducation: {
+      parentInterference: typeof fe.parentInterference === "string" ? fe.parentInterference.trim() : "",
+      strengthPotential: typeof fe.strengthPotential === "string" ? fe.strengthPotential.trim() : "",
+      actionSuggestions: Array.isArray(fe.actionSuggestions) ? fe.actionSuggestions.filter(e => typeof e === "string" && e.trim()).slice(0, 5) : [],
+    },
+    projectionAnalysis: {
+      attentionProjection: typeof pr.attentionProjection === "string" ? pr.attentionProjection.trim() : "",
+      relationshipProjection: typeof pr.relationshipProjection === "string" ? pr.relationshipProjection.trim() : "",
+      needProjection: typeof pr.needProjection === "string" ? pr.needProjection.trim() : "",
+    },
+    talentInsight: {
+      primaryTalent: typeof ti.primaryTalent === "string" ? ti.primaryTalent.trim() : "",
+      evidenceList: Array.isArray(ti.evidenceList) ? ti.evidenceList.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
     },
   };
 }
