@@ -786,34 +786,16 @@ function buildGuidanceImagePrompt(variant = 1, talentType = null) {
   const safeVariant = Number.isFinite(Number(variant)) && Number(variant) > 0
     ? Math.floor(Number(variant))
     : 1;
-  const direction =
-    guidanceVariantDirections[(safeVariant - 1) % guidanceVariantDirections.length];
+  const direction = guidanceVariantDirections[(safeVariant - 1) % guidanceVariantDirections.length];
 
   return [
-  "Edit the uploaded child artwork as a preservation-first teacher guidance image.",
-  `This is alternative方案 ${safeVariant}. Create a fresh option that is visibly different from earlier attempts while still preserving the original drawing.`,
-  direction,
-  "",
-  "=== TWO-STEP PROCESS ===",
-  "STEP 1 — Content Completion: First analyze what is MISSING from the child's drawing. Is the background empty? Is the scene incomplete? Are there blank areas that need story elements? Add the missing content using the EXACT SAME hand-drawn style as the child — same wobbly line quality, same simple shapes, same childlike proportions. The added elements must look like the child drew them, not like an adult illustrator filled them in. Use pencil-like or crayon-like strokes that match the original drawing's texture.",
-  "STEP 2 — Coloring: Only after the content gaps are filled, apply coloring. Use child-friendly colors. Preserve the original lines underneath. Color should enhance, not cover.",
-  "",
-  "Do not remake the drawing. Do not replace the child style with a polished adult illustration.",
-  "Keep the original subjects, childlike linework, rough hand-drawn strokes, shapes, proportions, positions, scale relationships, number of characters or objects, and main composition as the fixed base.",
-  "Preserve 100 percent of the uploaded drawing's visible original content. Do not erase, crop, move, resize, redraw, replace, simplify, beautify, or cover any existing animals, people, objects, faces, gestures, outlines, brush marks, colors, or child-made details.",
-  "Treat the uploaded artwork as a fixed base layer. Add missing content in matching hand-drawn child style first, then apply coloring last.",
-  "",
-  "🚫 STRICTLY FORBIDDEN — 严禁以下简笔画元素：",
-  "- 太阳：禁止画标准圆形+周围射线的简笔太阳",
-  "- 云朵：禁止画棉花糖形状的卡通云",
-  "- 树：禁止画长方形树干+圆形树冠的棒棒糖树",
-  "- 花：禁止画五瓣雏菊或标准简笔花",
-  "- 草：禁止画一排锯齿状的简笔草",
-  "- 鸟：禁止画V字形海鸥简笔鸟",
-  "如果必须添加自然元素，必须画得像孩子观察后手绘的——树要有不规则枝干，云要有变化形状，太阳要歪歪扭扭像孩子刚学会画的样子。没有任何简笔画痕迹。",
-  "",
-  "The result should look like the child's own artwork after a teacher helped them add what was missing and then color it — all in the same child-drawing style.",
-  "No text, no watermark, no annotation arrows, no guide lines, no tutorial layout, no split panels.",
+    "【最高指令】优化这幅孩子手绘作品。100%保留原画。只添加强关联背景。",
+    direction,
+    "",
+    "强关联映射：机器人→机械零件/科技背景 | 花朵→花园/蝴蝶 | 恐龙→火山/森林 | 人物→所在场景(区分室内外) | 汽车→道路/城市 | 海洋动物→海水/珊瑚",
+    "室内场景只加室内元素(地板/家具/窗户)，室外场景只加室外元素(地面/树木/天空)",
+    "严禁：蓝天白云太阳、万能草地、与原画无关的通用背景",
+    "保持孩子手绘风格。不留白色空白背景。",
   ].join("\n");
 }
 
@@ -949,32 +931,23 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
   ].filter(Boolean).join("\n") : "";
 
   return [
-    "CRITICAL: You MUST add relevant background elements that match the subject of the drawing. Do NOT leave the background empty or white.",
+    "【最高指令 - 必须严格执行】优化这幅孩子手绘作品。100%保留原画所有线条和颜色。只添加与原画内容强关联的背景元素。",
     "",
-    "ABSOLUTE RULES:",
-    "1. PRESERVE 100% of the original drawing - every line, shape, color stays exactly as-is.",
-    "1b. CRITICAL - MATCH THE SETTING: Look at the original drawing carefully. If the scene is OUTDOORS (sky visible, ground/grass, trees, outside activities) → add ONLY outdoor background elements. If the scene is INDOORS (floor, walls, furniture, room setting) → add ONLY indoor background elements. NEVER change an outdoor scene to indoor or vice versa. If uncertain, keep the background minimal and match the existing setting cues.",
-    "2. ADD BACKGROUND that directly relates to the subject AND matches the indoor/outdoor setting:",
-    "   - Robot/mecha → add gears, wires, control panels, mechanical parts, tech background",
-    "   - Flowers/plants → add garden, grass, butterflies, watering can, flower pots, nature",
-    "   - Dinosaurs → add volcano, prehistoric forest, other dinosaurs, fossils, jungle",
-    "   - People/characters OUTDOORS → add park, playground, street, sky, trees, buildings (NOT indoor furniture/walls)",
-    "   - People/characters INDOORS → add room, floor, windows, furniture, toys, bookshelves (NOT sky/trees/grass)",
-    "   - Cars/vehicles → add road, traffic signs, garage, gas station, city backdrop",
-    "   - Ocean animals → add water, coral, bubbles, seaweed, other sea creatures",
-    "   - Animals OUTDOORS → add their natural outdoor habitat, trees, grass, sky",
-    "   - Animals INDOORS (pets) → add room, pet bed, food bowl, toys, indoor setting",
-    "   - Buildings → add surrounding city, windows, doors, skyline, streets",
-    "3. NEVER add generic scenery (blue sky, white clouds, sun, random grass, distant mountains) unless already in the original drawing.",
-    "4. Match the child's hand-drawing style exactly - wobbly lines, uneven coloring, childlike proportions.",
-    "5. Fill empty spaces with subject-related details. If the drawing has lots of blank space, that's where you add context.",
+    "强关联映射（严格遵守）：",
+    "机器人→机械零件、齿轮、操作面板、科技背景",
+    "花朵→花园、草地、蝴蝶、浇水壶、花盆",
+    "恐龙→火山、原始森林、其他恐龙、化石、蕨类植物",
+    "人物→服装细节、手持物品、所在场景（室外加公园/游乐场/街道，室内加房间/家具/窗户）",
+    "汽车→道路、交通标志、车库、加油站、城市背景",
+    "海洋动物→海水、珊瑚、气泡、海草、其他海洋生物",
+    "室内场景→地板、墙壁、窗户、家具、玩具、书架（绝不加天空/草地）",
+    "室外场景→地面、树木、建筑、天空（绝不加室内家具）",
     "",
-    `Style: ${style.styleCategory} - ${style.colorDirection}`,
-    `Composition: ${style.compositionDirection}`,
+    "严禁添加：蓝天白云太阳、万能绿草地、远处山水、与原画无关的通用背景",
+    "",
+    "ENGLISH: Edit the child's drawing. KEEP every original line and color 100% intact. ONLY add background elements that directly relate to the subject shown. Match indoor/outdoor setting. NO generic sky/clouds/sun/grass. Child-like hand-drawing style.",
     talentGuidance,
-    note ? `ADDITIONAL INSTRUCTION: ${note}` : "",
-    "",
-    "The output must look like a complete scene where the background was drawn by the same child to complement their original subject. NO empty white backgrounds.",
+    note ? `USER NOTE: ${note}` : "",
   ].filter(Boolean).join("\n");
 }
 
