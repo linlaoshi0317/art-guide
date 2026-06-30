@@ -51,7 +51,7 @@ const DA = {
 
 function sn(v, fb = "") { if (typeof v !== "string") return fb; const t = v.trim(); return (!t || /[�锟]/.test(t)) ? fb : t; }
 function TDU(input) { if (input.startsWith("data:image/")) return Promise.resolve(input); return fetch(input).then(r => { if (!r.ok) throw new Error("load_failed"); return r.blob(); }).then(b => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.onerror = () => reject(new Error("read_failed")); fr.readAsDataURL(b); })); }
-async function API(url, body) { const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) throw new Error(data.error || data.message || "请求失败"); return data; }
+async function API(url, body) { const headers = { "Content-Type": "application/json" }; if (authToken) headers["Authorization"] = `Bearer ${authToken}`; const resp = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) throw new Error(data.error || data.message || "请求失败"); return data; }
 function NA(raw) { if (!raw || typeof raw !== "object") return DA; const pa = raw.psychologyAnalysis || {}, fe = raw.familyEducation || {}, pr = raw.projectionAnalysis || {}, ti = raw.talentInsight || {}, pw = raw.parentWording || {}; return { teacherCopy: sn(raw.teacherCopy, ""), psychologyAnalysis: { emotionState: sn(pa.emotionState), securityLevel: sn(pa.securityLevel), selfCognition: sn(pa.selfCognition), keyEvidence: Array.isArray(pa.keyEvidence) ? pa.keyEvidence.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] }, familyEducation: { parentInterference: sn(fe.parentInterference), strengthPotential: sn(fe.strengthPotential), actionSuggestions: Array.isArray(fe.actionSuggestions) ? fe.actionSuggestions.filter(e => typeof e === "string" && e.trim()).slice(0, 5) : [] }, projectionAnalysis: { attentionProjection: sn(pr.attentionProjection), relationshipProjection: sn(pr.relationshipProjection), needProjection: sn(pr.needProjection) }, talentInsight: { primaryTalent: sn(ti.primaryTalent), evidenceList: Array.isArray(ti.evidenceList) ? ti.evidenceList.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] }, parentWording: { shouldSay: Array.isArray(pw.shouldSay) ? pw.shouldSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [], shouldNotSay: Array.isArray(pw.shouldNotSay) ? pw.shouldNotSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] } }; }
 function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resolve(dataUrl); return new Promise((resolve) => { const img = new Image(); img.onload = () => { const ir = img.width / img.height, tr = origW / origH; if (Math.abs(ir - tr) < .01) { resolve(dataUrl); return; } const c = document.createElement("canvas"); let cw, ch, sx, sy; if (ir > tr) { ch = img.height; cw = Math.round(img.height * tr); sx = Math.round((img.width - cw) / 2); sy = 0; } else { cw = img.width; ch = Math.round(img.width / tr); sx = 0; sy = Math.round((img.height - ch) / 2); } c.width = cw; c.height = ch; c.getContext("2d").drawImage(img, sx, sy, cw, ch, 0, 0, cw, ch); resolve(c.toDataURL("image/png")); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 
@@ -143,7 +143,22 @@ export function App() {
   function updateTeacherCopy(v) { setAnalysis(prev => ({ ...prev, teacherCopy: v })); }
 
   return (
-    <main style={st.page}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spinning{animation:spin 1s linear infinite}@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style><div style={st.container}>
+    <main style={st.page}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spinning{animation:spin 1s linear infinite}@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+    {!authToken ? <div style={{ ...st.container, maxWidth: 420, paddingTop: 80 }}>
+      <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>注册账号后使用</p></header>
+      <div style={st.card}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 20 }}>
+          <button onClick={() => setAuthMode("login")} style={{ flex: 1, padding: 12, border: "none", background: authMode === "login" ? "#E07B39" : "#f5f1eb", color: authMode === "login" ? "#fff" : "#5c4a3a", borderRadius: "12px 0 0 12px", cursor: "pointer", fontWeight: 600, fontSize: 15 }}>登录</button>
+          <button onClick={() => setAuthMode("register")} style={{ flex: 1, padding: 12, border: "none", background: authMode === "register" ? "#E07B39" : "#f5f1eb", color: authMode === "register" ? "#fff" : "#5c4a3a", borderRadius: "0 12px 12px 0", cursor: "pointer", fontWeight: 600, fontSize: 15 }}>注册</button>
+        </div>
+        <input type="email" placeholder="请输入邮箱" value={authEmail} onChange={e => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "1.5px solid #e8e0d5", fontSize: 14, marginBottom: 10, background: "#fdfcf9", outline: "none" }} />
+        <input type="password" placeholder="请输入密码（6位以上）" value={authPassword} onChange={e => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "1.5px solid #e8e0d5", fontSize: 14, marginBottom: 10, background: "#fdfcf9", outline: "none" }} />
+        {authMode === "register" && <input type="text" placeholder="请输入邀请码" value={authInviteCode} onChange={e => setAuthInviteCode(e.target.value)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "1.5px solid #e8e0d5", fontSize: 14, marginBottom: 10, background: "#fdfcf9", outline: "none" }} />}
+        {authError && <p style={{ color: "#C62828", fontSize: 13, marginBottom: 10, textAlign: "center" }}>{authError}</p>}
+        <button onClick={handleAuth} disabled={authLoading} style={{ ...st.btnPrimary, opacity: authLoading ? 0.6 : 1 }}>{authLoading ? "处理中……" : authMode === "register" ? "注册" : "登录"}</button>
+        {authMode === "register" && <p style={{ ...st.textSmall, textAlign: "center", marginTop: 12 }}>需持有邀请码才能注册</p>}
+      </div>
+    </div> : <><div style={st.container}>
       <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p><button onClick={() => setShowSettings(true)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#888" }} title="设置"><Settings size={20} /></button></header>
       {activeTab === "analysis" && <div>
         <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>1</span> 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
@@ -344,6 +359,8 @@ export function App() {
         <button onClick={handleAuth} disabled={authLoading} style={{ ...st.btnPrimary, opacity: authLoading ? 0.6 : 1 }}>{authLoading ? "处理中……" : authMode === "register" ? "注册" : "登录"}</button>
       </div>}
     </div></div></div>}
+    </>
+    }
     </main>
   );
 }
