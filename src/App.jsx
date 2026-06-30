@@ -57,41 +57,43 @@ function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resol
 
 // Styles
 const st = {
-  page: { minHeight: "100vh", background: "#f5f4f0", fontFamily: "system-ui, -apple-system, sans-serif" },
-  container: { maxWidth: 900, margin: "0 auto", padding: "20px 20px 100px" },
-  header: { textAlign: "center", padding: "30px 0 20px", position: "relative" },
-  h1: { fontSize: 22, margin: 0, color: "#1a1a1a" },
-  sub: { color: "#888", fontSize: 14, marginTop: 4 },
-  card: { background: "#fff", borderRadius: 18, padding: 20, marginBottom: 16, boxShadow: "0 1px 0 rgba(255,255,255,0.7), 0 12px 30px rgba(15,23,42,0.04)" },
-  stepLabel: { fontSize: 13, color: "#888", marginBottom: 12, letterSpacing: 1 },
-  placeholder: { border: "2px dashed #ddd", borderRadius: 12, padding: 60, textAlign: "center", color: "#aaa", fontSize: 18, letterSpacing: 4, cursor: "pointer" },
-  img: { width: "100%", borderRadius: 12, maxHeight: 300, objectFit: "contain" },
-  select: { width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginBottom: 12, background: "#fff" },
-  btnPrimary: { width: "100%", padding: 14, background: "#E07B39", color: "#fff", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
-  btnDisabled: { width: "100%", padding: 14, background: "#ccc", color: "#999", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
-  btnSecondary: { padding: "10px 20px", background: "#f0f0f0", color: "#555", border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
-  btnAccent: { padding: "10px 20px", background: "#E07B39", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
-  h3: { margin: "0 0 10px", fontSize: 16, color: "#1a1a1a" },
-  h4: { margin: "0 0 6px", fontSize: 14, color: "#C08552" },
-  text: { color: "#555", lineHeight: 1.85, margin: 0, fontSize: 14 },
-  textSmall: { color: "#888", fontSize: 13, lineHeight: 1.7 },
-  tag: { display: "inline-block", background: "#FFF3ED", color: "#E07B39", padding: "2px 10px", borderRadius: 12, fontSize: 12, marginRight: 6, marginBottom: 4 },
-  evidenceList: { paddingLeft: 16, margin: "4px 0 0", fontSize: 13, color: "#555", lineHeight: 1.7 },
-  actionList: { paddingLeft: 16, margin: "4px 0 0", fontSize: 13, color: "#555", lineHeight: 1.7 },
-  section: { marginBottom: 20 },
-  nav: { position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #eee", display: "flex", justifyContent: "space-around", padding: "8px 0 12px", zIndex: 100 },
-  navBtn: (active) => ({ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, border: "none", background: "none", color: active ? "#E07B39" : "#888", fontSize: 11, cursor: "pointer", padding: "6px 12px" }),
-  compareGrid: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center" },
-  compareLabel: { fontSize: 12, color: "#888", marginBottom: 4, textAlign: "center" },
-  divider: { fontSize: 20, color: "#ccc", padding: "0 8px" },
-  errorBox: { background: "#FFF3ED", color: "#C0652A", padding: 12, borderRadius: 10, marginTop: 12, fontSize: 14 },
-  recordItem: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" },
-  thumb: { width: 56, height: 56, borderRadius: 8, objectFit: "cover", background: "#f5f5f5" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 },
-  modal: { background: "#fff", borderRadius: 18, maxWidth: 700, width: "100%", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" },
+  page: { minHeight: "100vh", background: "linear-gradient(180deg, #faf8f5 0%, #f5f1eb 100%)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif", WebkitFontSmoothing: "antialiased" },
+  container: { maxWidth: 520, margin: "0 auto", padding: "0 16px 120px" },
+  header: { textAlign: "center", padding: "44px 20px 28px", position: "relative" },
+  h1: { fontSize: 24, margin: 0, color: "#1a1a1a", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 },
+  sub: { color: "#9b8c7c", fontSize: 14, marginTop: 6, fontWeight: 400, letterSpacing: "0.04em" },
+  card: { background: "#ffffff", borderRadius: 20, padding: 22, marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02), 0 4px 16px rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.04)" },
+  stepLabel: { fontSize: 12, color: "#b8a99a", marginBottom: 14, letterSpacing: "0.08em", fontWeight: 600, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 },
+  stepNum: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 11, background: "#E07B39", color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0 },
+  placeholder: { border: "2px dashed #e8e0d5", borderRadius: 16, padding: "52px 20px", textAlign: "center", color: "#c4b8a8", fontSize: 16, letterSpacing: "0.06em", cursor: "pointer", fontWeight: 500, transition: "all 0.2s", background: "#fdfcf9" },
+  img: { width: "100%", borderRadius: 14, maxHeight: 320, objectFit: "contain", background: "#faf8f5" },
+  select: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid #e8e0d5", fontSize: 14, marginBottom: 12, background: "#fdfcf9", color: "#3d3226", appearance: "none", WebkitAppearance: "none", outline: "none", cursor: "pointer" },
+  btnPrimary: { width: "100%", padding: "15px 20px", background: "linear-gradient(135deg, #E07B39 0%, #d4692a 100%)", color: "#fff", border: "none", borderRadius: 14, fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 2px 8px rgba(224,123,57,0.25)", transition: "all 0.2s", letterSpacing: "0.02em" },
+  btnDisabled: { width: "100%", padding: "15px 20px", background: "#e8e0d5", color: "#b8a99a", border: "none", borderRadius: 14, fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, letterSpacing: "0.02em" },
+  btnSecondary: { padding: "11px 18px", background: "#f5f1eb", color: "#5c4a3a", border: "1.5px solid #e8e0d5", borderRadius: 12, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontWeight: 500, transition: "all 0.2s" },
+  btnAccent: { padding: "11px 18px", background: "linear-gradient(135deg, #E07B39 0%, #d4692a 100%)", color: "#fff", border: "none", borderRadius: 12, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontWeight: 600, boxShadow: "0 2px 6px rgba(224,123,57,0.2)" },
+  h3: { margin: "0 0 10px", fontSize: 16, color: "#1a1a1a", fontWeight: 600, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: 8 },
+  h4: { margin: "0 0 4px", fontSize: 13, color: "#9b8c7c", fontWeight: 600, letterSpacing: "0.03em", textTransform: "uppercase" },
+  text: { color: "#4a3f35", lineHeight: 1.82, margin: 0, fontSize: 14 },
+  textSmall: { color: "#9b8c7c", fontSize: 12, lineHeight: 1.7 },
+  tag: { display: "inline-block", background: "#fdf3ea", color: "#c0652a", padding: "3px 10px", borderRadius: 10, fontSize: 11, marginRight: 6, marginBottom: 4, fontWeight: 500 },
+  evidenceList: { paddingLeft: 18, margin: "4px 0 0", fontSize: 13, color: "#5c4a3a", lineHeight: 1.8 },
+  actionList: { paddingLeft: 18, margin: "4px 0 0", fontSize: 13, color: "#5c4a3a", lineHeight: 1.8 },
+  section: { marginBottom: 18 },
+  divider: { height: 1, background: "#f0ebe0", margin: "8px 0 16px", border: "none" },
+  nav: { position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-around", padding: "6px 0 16px", zIndex: 100 },
+  navBtn: (active) => ({ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, border: "none", background: "none", color: active ? "#E07B39" : "#b8a99a", fontSize: 10, cursor: "pointer", padding: "6px 16px", fontWeight: active ? 600 : 400, transition: "all 0.2s" }),
+  compareGrid: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, alignItems: "start" },
+  compareLabel: { fontSize: 11, color: "#b8a99a", marginBottom: 6, textAlign: "center", fontWeight: 600, letterSpacing: "0.04em" },
+  dividerIcon: { fontSize: 18, color: "#d4c8b8", padding: "0 4px", alignSelf: "center", marginTop: -12 },
+  errorBox: { background: "#fef5f0", color: "#b8542a", padding: 14, borderRadius: 12, marginTop: 12, fontSize: 13, border: "1px solid #fde8d8" },
+  recordItem: { display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: "1px solid #f5f1eb", cursor: "pointer", transition: "background 0.15s" },
+  thumb: { width: 52, height: 52, borderRadius: 12, objectFit: "cover", background: "#f5f1eb", flexShrink: 0 },
+  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 },
+  modal: { background: "#fff", borderRadius: 24, maxWidth: 440, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.12)" },
   modalScroll: { overflow: "auto", padding: 24, flex: 1 },
-  modalActions: { display: "flex", gap: 10, padding: 16, borderTop: "1px solid #eee" },
-  resultActions: { display: "flex", gap: 10, justifyContent: "center", marginTop: 16, flexWrap: "wrap" },
+  modalActions: { display: "flex", gap: 10, padding: 16, borderTop: "1px solid #f0ebe0" },
+  resultActions: { display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" },
 };
 
 export function App() {
@@ -143,12 +145,12 @@ export function App() {
     <main style={st.page}><div style={st.container}>
       <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p><button onClick={() => setShowSettings(true)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#888" }} title="设置"><Settings size={20} /></button></header>
       {activeTab === "analysis" && <div>
-        <div style={st.card}><div style={st.stepLabel}>1 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
+        <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>1</span> 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
           <div style={{ marginTop: 12 }}><span style={{ fontSize: 12, color: "#888" }}>孩子姓名（选填）</span><input type="text" placeholder="输入孩子姓名或昵称" value={childName} onChange={e => setChildName(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 14, marginTop: 4 }} /></div>
           <div style={{ marginTop: 12 }}><span style={{ fontSize: 12, color: "#E07B39" }}>*必选 </span><select value={childAge} onChange={e => setChildAge(e.target.value)} style={{ ...st.select, width: "auto", marginBottom: 0 }}><option value="">选择年龄段</option><option value="3-5">3~5岁 · 象征期</option><option value="5-8">5~8岁 · 意向表现期</option><option value="8-12">8~12岁 · 写实期</option><option value="12+">12岁+ · 专业发展期</option></select></div></div>
-        <div style={st.card}><div style={st.stepLabel}>2 选择画风方向并生成优化图</div><select value={styleId} onChange={e => { setStyleId(e.target.value); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); }} style={st.select}>{styleGroups.map(g => <optgroup key={g.label} label={g.label}>{g.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</optgroup>)}</select><p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>{selStyle.summary}</p><textarea placeholder="补充说明（可选）" value={gNote} onChange={e => setGNote(e.target.value)} rows={2} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, marginBottom: 12, resize: "vertical" }} />
+        <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>2</span> 选择画风方向并生成优化图</div><select value={styleId} onChange={e => { setStyleId(e.target.value); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); }} style={st.select}>{styleGroups.map(g => <optgroup key={g.label} label={g.label}>{g.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</optgroup>)}</select><p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>{selStyle.summary}</p><textarea placeholder="补充说明（可选）" value={gNote} onChange={e => setGNote(e.target.value)} rows={2} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, marginBottom: 12, resize: "vertical" }} />
           <button onClick={runGuidance} disabled={gStatus === "generating" || !preview || !childAge} style={gStatus === "generating" || !preview || !childAge ? st.btnDisabled : st.btnPrimary}>{!childAge && preview ? "请先选择年龄段" : gStatus === "generating" ? <><RefreshCcw size={18} className="spinning" />{C.guideGenerating}</> : <><Sparkles size={18} />{C.guideAction}</>}</button></div>
-        {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}>3 对比结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div><div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.divider}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div>{gResults.length > 0 ? <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}</div></div></div>}
+        {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>3</span> 对比结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div><div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div>{gResults.length > 0 ? <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}</div></div></div>}
         {gStatus === "error" && <div style={st.errorBox}>❌ {gErr}<br /><button onClick={runGuidance} style={{ ...st.btnAccent, marginTop: 8 }}>重新生成</button></div>}
         {showColorizeBtn && gStatus === "done" && <div style={st.card}><div style={{ textAlign: "center" }}><p style={{ ...st.textSmall, marginBottom: 10 }}>检测到优化图为线稿风格，是否需要一键上色？</p><button onClick={runColorize} disabled={cStatus === "colorizing"} style={cStatus === "colorizing" ? st.btnDisabled : { ...st.btnPrimary, background: "#7C3AED" }}><Palette size={18} />{cStatus === "colorizing" ? "上色中……" : cStatus === "done" ? "✓ 上色完成" : "一键上色"}</button></div></div>}
 
