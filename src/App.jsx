@@ -106,6 +106,8 @@ export function App() {
   const [activeTab, setActiveTab] = useState("analysis"), [showReport, setShowReport] = useState(false), [previewImage, setPreviewImage] = useState(null);
   const [cStatus, setCStatus] = useState("idle");
   const [showColorizeBtn, setShowColorizeBtn] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [authToken, setAuthToken] = useState(() => { try { return localStorage.getItem("art_token") || ""; } catch { return ""; } });
   const [authUser, setAuthUser] = useState(null);
@@ -126,7 +128,7 @@ export function App() {
   async function runGuidance() { if (!preview || gStatus === "generating") return; const vb = ++gVar.current, seq = ++gSeq.current; const vars = Array.from({ length: GBS }, (_, i) => vb + i); gVar.current += GBS - 1; setGStatus("generating"); setGErr(""); setGResults([]); setStyleGuide(null); try { const du = await TDU(preview); const sp = selStyle.id === "auto" ? null : selStyle; const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v }; }))); if (gSeq.current !== seq) return; const ok = results.filter(r => r.status === "fulfilled").map(r => r.value); if (ok.length > 0) { setGResults(ok); setStyleGuide(ok[0].styleGuide || null); setGStatus("done"); setCStatus("idle"); setShowColorizeBtn(false); isLineArt(ok[0].image).then(ila => { if (ila) setShowColorizeBtn(true); }); setGHistory(h => [{ id: `${Date.now()}`, createdAt: new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }), fileName: fileName || C.newArtwork, preview, generatedImage: ok[0].image, styleName: SDN(ok[0].styleGuide || null) }, ...h].slice(0, 50)); } else { const fe = results.find(r => r.status === "rejected"); setGErr(fe?.reason?.message || C.guideFailedHint); setGStatus("error"); } } catch (e) { if (gSeq.current === seq) { setGErr(e.message || C.guideFailedHint); setGStatus("error"); } } }
 
   function handleFile(e) { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const src = String(r.result); cfRef.current = { name: f.name, src }; setPreview(src); setFileName(f.name.replace(/\.[^.]+$/, "") || C.newArtwork); setAnalysis(DA); setStatus("idle"); setASrc("idle"); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); gVar.current = 0; runAnalysis(src, cfRef.current); }; r.readAsDataURL(f); }
-  function handleSave() { if (!isDone) return; const rec = { id: `${Date.now()}`, fileName: fileName || C.newArtwork, preview, analysis, savedAt: C.justNow }; setRecords(r => [rec, ...r].slice(0, 50)); setSaved(true); setTimeout(() => setSaved(false), 1600); try { fetch("/api/records/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: rec.fileName, preview, analysis }) }).catch(() => {}); } catch {} }
+  function handleSave() { if (!isDone) return; const rec = { id: `${Date.now()}`, fileName: fileName || C.newArtwork, preview, analysis, savedAt: C.justNow }; setRecords(r => [rec, ...r].slice(0, 50)); setSaved(true); setToastMsg("✅ 已保存到记录"); setShowToast(true); setTimeout(() => { setSaved(false); setShowToast(false); }, 2000); try { fetch("/api/records/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: rec.fileName, preview, analysis }) }).catch(() => {}); } catch {} }
 
   function isLineArt(imgSrc) { return new Promise((resolve) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = 96; c.height = 96; const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, 96, 96); const d = ctx.getImageData(0, 0, 96, 96).data; let sat = 0, count = 0; for (let i = 0; i < d.length; i += 16) { const r = d[i], g = d[i+1], b = d[i+2]; const mx = Math.max(r,g,b), mn = Math.min(r,g,b); if (mx > 30) { sat += mx === 0 ? 0 : (mx-mn)/mx; count++; } } const avgSat = count > 0 ? (sat/count) : 0; resolve(avgSat < 0.25); }; img.onerror = () => resolve(false); img.src = imgSrc; }); }
 
@@ -142,7 +144,7 @@ export function App() {
   function updateTeacherCopy(v) { setAnalysis(prev => ({ ...prev, teacherCopy: v })); }
 
   return (
-    <main style={st.page}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spinning{animation:spin 1s linear infinite}`}</style><div style={st.container}>
+    <main style={st.page}><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spinning{animation:spin 1s linear infinite}@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style><div style={st.container}>
       <header style={st.header}><h1 style={st.h1}>{C.title}</h1><p style={st.sub}>从画面看见孩子 · 用优势滋养成长</p><button onClick={() => setShowSettings(true)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#888" }} title="设置"><Settings size={20} /></button></header>
       {activeTab === "analysis" && <div>
         <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>1</span> 上传作品</div><label style={{ display: "block", cursor: "pointer" }}>{preview ? <img src={preview} alt="" style={st.img} /> : <div style={st.placeholder}>上传作品</div>}<input type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} /></label>
@@ -218,16 +220,21 @@ export function App() {
         </div>
         <div style={st.card}><h3 style={st.h3}>🖼️ {C.generationHistory} <span style={{ fontSize: 12, color: "#aaa", fontWeight: 400 }}>（{gHistory.length}条）</span></h3>
           {gHistory.length === 0 ? <div style={{ textAlign: "center", padding: 30, color: "#888" }}><p style={{ margin: 0 }}>{C.noGenerationHistory}</p><p style={{ ...st.textSmall, marginTop: 8 }}>{C.generationHistoryHint}</p></div>
-          : gHistory.map(h => <div key={h.id} style={{ ...st.recordItem, cursor: "default" }}>
+          : gHistory.map(h => <div key={h.id} style={{ ...st.recordItem, cursor: "pointer" }} onClick={() => setPreviewImage({ src: h.lineArtImage || h.generatedImage, title: h.fileName, lineArt: h.lineArtImage, colored: h.lineArtImage ? h.generatedImage : null })}>
             <img src={h.generatedImage} alt="" style={st.thumb} />
-            <div style={{ flex: 1 }}><strong style={{ fontSize: 14 }}>{h.fileName}</strong><br /><span style={st.textSmall}>{h.createdAt} · {h.styleName}</span></div>
+            <div style={{ flex: 1 }}><strong style={{ fontSize: 14 }}>{h.fileName}</strong><br /><span style={st.textSmall}>{h.createdAt} · {h.styleName}{h.lineArtImage ? " · 已上色" : ""}</span></div>
           </div>)}
         </div>
       </div>}
     </div>
 
     <input ref={fiRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
-    {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div><img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} /></div></div>}
+    {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
+      {previewImage.lineArt && previewImage.colored ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 12px 12px" }}>
+        <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#b8a99a", marginBottom: 4 }}>📐 线稿</div><img src={previewImage.lineArt} alt="" style={{ width: "100%", maxHeight: "70vh", objectFit: "contain", borderRadius: 10 }} /></div>
+        <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#E07B39", marginBottom: 4 }}>🎨 上色</div><img src={previewImage.colored} alt="" style={{ width: "100%", maxHeight: "70vh", objectFit: "contain", borderRadius: 10 }} /></div>
+      </div> : <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />}
+    </div></div>}
     {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center", padding: "32px 28px" }} ref={rptRef}>
       {/* Report Header */}
       <div style={{ marginBottom: 32, paddingBottom: 20, borderBottom: "2px solid #f0ebe0" }}>
@@ -315,6 +322,9 @@ export function App() {
       <div style={{ paddingTop: 20, borderTop: "2px solid #f0ebe0", textAlign: "center" }}><p style={{ fontSize: 12, color: "#b8a99a", margin: 0, fontStyle: "italic" }}>{C.strengthClosing}</p></div>
     </div><div style={st.modalActions} className="report-actions"><button onClick={() => setShowReport(false)} style={st.btnSecondary}><X size={16} /> {C.closePreview}</button><button onClick={exportReport} style={st.btnAccent}><Download size={16} /> {C.downloadReport}</button></div></div></div>}
     <nav style={st.nav}><button onClick={() => setActiveTab("analysis")} style={st.navBtn(activeTab === "analysis")}><Search size={20} /><span>分析</span></button><button onClick={() => setActiveTab("records")} style={st.navBtn(activeTab === "records")}><FileText size={20} /><span>记录</span></button></nav>
+
+    {/* Toast */}
+    {showToast && <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: "#3d3226", color: "#fff", padding: "10px 24px", borderRadius: 20, fontSize: 14, fontWeight: 600, zIndex: 300, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", animation: "fadeInUp 0.3s ease" }}>{toastMsg}</div>}
 
     {/* Settings Modal */}
     {showSettings && <div style={st.overlay} onClick={() => setShowSettings(false)}><div style={{ ...st.modal, maxWidth: 420 }} onClick={e => e.stopPropagation()}><div style={st.modalScroll}>
