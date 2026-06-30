@@ -2729,6 +2729,34 @@ const MIME_TYPES = {
   ".woff2": "font/woff2",
 };
 
+// ===== 一键上色 =====
+async function handleColorizeImage(request, response) {
+  const auth = getAuthOrGuest(request);
+  if (!auth) { sendJson(response, 401, { error: "请先登录" }); return; }
+  try {
+    const rawBody = await readBody(request);
+    const body = JSON.parse(rawBody);
+    const image = body?.image;
+    if (typeof image !== "string" || !image.startsWith("data:image/")) {
+      sendJson(response, 400, { error: "invalid_image" }); return;
+    }
+    const { buffer, extension, mimeType } = parseDataUrl(image);
+    const colorPrompt = "Add child-friendly coloring to this line drawing. Use warm, harmonious colors suitable for a child's artwork. Preserve ALL original lines exactly as they are - do not erase, redraw, or cover any lines. Color gently within the existing outlines. Keep the hand-drawn childlike quality. Use crayon or colored-pencil texture. Do not add new objects or background elements. Only add color to what already exists.";
+    const fields = { model: IMAGE_MODELS[0], n: "1", prompt: colorPrompt, size: IMAGE_SIZES[0] || "1024x1024" };
+    const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
+    let result;
+    try {
+      const multipart = buildMultipartBody({ fields, file });
+      const upstream = await fetch(`${AI_BASE_URL}/images/edits`, { body: multipart.body, headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": multipart.contentType }, method: "POST" });
+      result = { ok: upstream.ok, result: await upstream.json().catch(() => ({})), status: upstream.status };
+    } catch { result = await requestImageEditWithPowerShell({ apiKey: API_KEY, fields, file }); }
+    if (!result.ok) { sendJson(response, result.status || 500, { error: getImageErrorMessage(result.result) }); return; }
+    const genImg = extractGeneratedImage(result.result);
+    if (!genImg) { sendJson(response, 500, { error: "coloring_failed" }); return; }
+    sendJson(response, 200, { image: genImg, model: IMAGE_MODELS[0], source: "ai" });
+  } catch { sendJson(response, 400, { error: "请求格式错误" }); }
+}
+
 function serveStatic(request, response) {
   let urlPath = request.url.split("?")[0].split("#")[0];
   if (urlPath === "/") urlPath = "/index.html";
@@ -2849,6 +2877,9 @@ const server = http.createServer((request, response) => {
   }
   if (request.method === "POST" && request.url === "/api/generate-turnaround") {
     handleGenerateTurnaround(request, response); return;
+  }
+  if (request.method === "POST" && request.url === "/api/colorize-image") {
+    handleColorizeImage(request, response); return;
   }
 
   serveStatic(request, response);
