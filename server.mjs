@@ -386,7 +386,7 @@ const responseSchema = {
   properties: {
     teacherCopy: {
       type: "string",
-      description: "温暖简短的老师点评（60-100字）。先描述一个画面具体细节，再给一句鼓励。禁止模板话术。禁止说'画得像不像/好不好'。",
+      description: "温暖简短的老师点评（80-120字）。先描述画面的一个具体细节（位置+内容），再肯定孩子的用心。如果需要建议'下一步'，必须遵循强关联原则：只能建议添加与画面主题直接相关的元素（如军事主题→战场/武器/防御工事，花朵主题→花园/蝴蝶/阳光，机器人→齿轮/科技背景），严禁建议添加'云彩''树木''蓝天白云''草地'等与主题无关的通用元素。点评内容要与页面生成的优化图方向保持一致。禁止模板话术，禁止说'画得像不像/好不好'。",
     },
     psychologyAnalysis: {
       type: "object",
@@ -537,7 +537,7 @@ const analysisPrompt = [
   "Analyze the uploaded image visually. Keep the child's original expression and imagination.",
   "Return JSON only. All visible text values must be in Simplified Chinese.",
   "Do not mention AI, model, upload, image quality, or adult judging standards.",
-  "teacherCopy should feel like a warm teacher's note to parent and child, using the蔺老师反馈话术风格: encouraging first, then one focused direction. Never say 画得像不像/好不好. Begin with specific observation of what the child drew.",
+  "teacherCopy should feel like a warm teacher's note: first describe a specific detail from the drawing (position + content), then encourage. If suggesting next steps, ONLY suggest elements that are directly related to the drawing's theme (military→battlefield/weapons, flowers→garden/butterflies, robots→gears/tech, etc.). NEVER suggest generic scenery like 'clouds''trees''blue sky''grass' unless they directly match the subject. The teacher comment must be consistent with the optimized image generated on the page. Never say 画得像不像/好不好.",
   "tags should describe visible traits such as subject, line density, color, composition direction, balance, and blank space.",
   "Do not generate separate contrast, alignment, repetition, or proximity cards.",
   "skeleton should diagnose the composition frame: visual center, viewing flow line, balance, and foreground/middle/background depth.",
