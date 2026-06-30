@@ -58,7 +58,7 @@ function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resol
 // Styles
 const st = {
   page: { minHeight: "100vh", background: "linear-gradient(180deg, #faf8f5 0%, #f5f1eb 100%)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif", WebkitFontSmoothing: "antialiased" },
-  container: { maxWidth: 520, margin: "0 auto", padding: "0 16px 120px" },
+  container: { maxWidth: 900, margin: "0 auto", padding: "0 20px 120px" },
   header: { textAlign: "center", padding: "44px 20px 28px", position: "relative" },
   h1: { fontSize: 24, margin: 0, color: "#1a1a1a", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 },
   sub: { color: "#9b8c7c", fontSize: 14, marginTop: 6, fontWeight: 400, letterSpacing: "0.04em" },
