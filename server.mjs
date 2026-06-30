@@ -2320,7 +2320,7 @@ async function handlePaymentCallback(request, response) {
 // ──────────── 路由处理：分析记录 ────────────
 
 async function handleSaveRecord(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
@@ -2347,7 +2347,7 @@ async function handleSaveRecord(request, response) {
 }
 
 async function handleGetRecords(request, response) {
-  const auth = requireAuth(request);
+  const auth = getAuthOrGuest(request);
   if (!auth) {
     sendJson(response, 401, { error: "请先登录" });
     return;
