@@ -1746,13 +1746,78 @@ async function generateGuidanceImage(image, fileName, variant, stylePreset = nul
 
 function getAgeContext(childAge) {
   const ageMap = {
-    "3-5": "The child is 3-5 years old (scribbling stage to schematic stage). At this age, children are developing fine motor skills and beginning to create recognizable shapes. Evaluate the artwork according to this developmental stage. Focus on spontaneity, emotional expression, and emerging symbol use rather than technical accuracy.",
-    "5-8": "The child is 5-8 years old (schematic stage to early realism). Children at this age use symbols and begin to organize space with baseline/skyline. They can tell stories through their drawings. Focus on narrative intent, spatial organization attempts, and creative choices.",
-    "8-12": "The child is 8-12 years old (realism stage). At this age, children strive for visual accuracy and may become self-critical. They develop understanding of depth, proportion, and perspective. Focus on technical development, attention to detail, and creative problem-solving while protecting artistic confidence.",
-    "12+": "The child is 12+ years old (professional development stage). Adolescents can handle advanced techniques, abstract concepts, and sophisticated critique. Focus on personal style development, conceptual thinking, and intentional artistic choices.",
+    "3-5": `【当前孩子年龄段：3-5岁 象征期】
+
+蔺老师家庭美育·象征期发展特征：
+- 孩子开始把图形与经验连接，解释可能前后变化——这是正常的探索过程。
+- 线条和形状开始具有象征意义（一个圆圈可能是太阳、人脸或饼干）。
+- 对颜色选择更多凭直觉和喜好，而非写实。
+- 手部精细动作仍在发展中，线条可能不稳定、用力不均。
+- 自我中心表达：画面围绕"我"展开（我的家人、我去过的地方、我喜欢的）。
+
+家长引导重点：
+- 用"可以给我介绍一下你的画吗？"代替"你画的是什么？"（保护表达欲，不要求命名）。
+- 以"我"为中心拓展主题：我的身体、我的家人、我今天去了哪里、我喜欢的动物。
+- 不说"像不像"、不比较、不示范让孩子照着画。
+- 关注线条和动作：可以说"你这条线很长""这里绕成了一个圈圈"。
+- 提供大纸和安全无毒的材料，建立固定创作区。
+- 孩子说"我不会画"时，先鼓励，再一起观察特征和形状——不代劳。
+
+分析这幅画时请参照以上年龄特征，重点关注：自发性、情绪表达、象征符号的出现、手部控制的发展过程。`,
+
+    "5-8": `【当前孩子年龄段：5-8岁 意向表现期】
+
+蔺老师家庭美育·意向表现期发展特征：
+- 孩子会画基本特征，开始在意可识别性，但仍保持强烈的个人表达。
+- 空间组织开始出现：基底线、天空线、排列式构图。
+- 叙事能力增强，愿意用画讲故事——画面中开始出现事件、关系和情节。
+- 对细节的兴趣增加，可能反复画同一主题（如公主、汽车、恐龙）不断深入。
+- 开始形成自己的符号系统，可能一段时间只画黑白或偏爱某种颜色。
+- 对"画得好不好"开始有自我意识，可能因不满意而擦改或放弃。
+
+家长引导重点：
+- 在家展示孩子作品，像对待艺术家的作品一样认真看待——装裱、标注日期。
+- 用"谁、何时、何地、与谁、做什么"拓展场景主题，但不打断孩子的专注。
+- 反馈孩子最仔细、最感兴趣、最有动作或故事感的部分（指出具体细节）。
+- 如果孩子一段时间只画一个主题（如只画恐龙、只画公主），这是聚焦型学习风格——不要强行纠正，而是提供更丰富的相关资源深化探索。
+- 避免说"你这里画错了""怎么不画颜色"——发展中状态不是能力缺失。
+- 接纳差异化：有的孩子擅长形体、有的对色彩敏感、有的乐于改造再设计。
+
+分析这幅画时请参照以上年龄特征，重点关注：叙事意图、空间组织尝试、主题聚焦度、细节投入程度、创意选择。`,
+
+    "8-12": `【当前孩子年龄段：8-12岁 写实期】
+
+蔺老师家庭美育·写实期发展特征：
+- 孩子开始追求视觉真实感：关注比例、遮挡、透视、光影。
+- 可能变得自我批评，"我画得不像"是常见情绪——需要保护艺术自信。
+- 能够处理更复杂的构图、细节和技法。
+- 个人风格开始萌芽：偏好某些主题、媒介、表现方式。
+- 可能已经形成简笔画套路（来自学校或同伴影响），需要温和引导回到观察和真实表达。
+- 对他人评价更敏感，父母反馈方式需要从"表扬"升级为"具体观察+信任"。
+
+家长引导重点：
+- 反馈要慎重，以鼓励为主同时给具体建议——指出细节和进步，不空洞说"很好"。
+- 不简单说"真棒"，要描述看到的具体内容："这个人物你画了手指的关节，你观察得很仔细。"
+- 如果孩子已经形成简笔画套路（如固定画法的大眼睛、标准笑容），不批评——先肯定模仿能力，再鼓励观察真实生活中喜欢的人事物。
+- 提供更丰富的工具（素描铅笔、水彩、丙烯、数位板），让技术成长有空间。
+- 带孩子看展览、画册、真实自然——输入决定输出。
+- 保护表达欲永远优先于技术纠正。
+
+分析这幅画时请参照以上年龄特征，重点关注：写实尝试、细节观察力、比例和空间意识、个人风格倾向、技术发展水平和艺术自信的保护需求。`,
+
+    "12+": `【当前孩子年龄段：12岁以上 专业发展期】
+
+蔺老师家庭美育·专业发展期特征：
+- 青春期孩子可以处理抽象概念、复杂技法和个人表达。
+- 艺术可能成为自我认同的重要部分，作品承载更深的思考和情感。
+- 对外界评价高度敏感，需要专业而温暖的引导。
+- 可以讨论艺术史、风格流派、创作理念等更深层话题。
+- 技术训练和个人风格发展需要平衡——技法为表达服务。
+
+分析这幅画时请参照以上年龄特征，重点关注：个人风格发展、概念思维深度、技法成熟度、情感表达的复杂性。`,
   };
   const ageInfo = ageMap[childAge] || ageMap["5-8"];
-  return "IMPORTANT CONTEXT: " + ageInfo + " Adjust ALL analysis fields accordingly — teacherCopy, tags, principles, nextSteps, skeleton, colorPlan, and strengthAnalysis should reflect age-appropriate expectations.";
+  return "=== 年龄阶段背景（必须严格据此调整分析）===\n" + ageInfo + "\n\n请确保 teacherCopy、nextSteps、colorPlan 以及所有分析内容都与这个年龄段的发展特征和家长引导重点精准对齐。";
 }
 
 function buildResponsesPayload(image, childAge) {
