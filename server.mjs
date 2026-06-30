@@ -2741,19 +2741,53 @@ async function handleColorizeImage(request, response) {
       sendJson(response, 400, { error: "invalid_image" }); return;
     }
     const { buffer, extension, mimeType } = parseDataUrl(image);
-    const colorPrompt = "Add child-friendly coloring to this line drawing. Use warm, harmonious colors suitable for a child's artwork. Preserve ALL original lines exactly as they are - do not erase, redraw, or cover any lines. Color gently within the existing outlines. Keep the hand-drawn childlike quality. Use crayon or colored-pencil texture. Do not add new objects or background elements. Only add color to what already exists.";
-    const fields = { model: IMAGE_MODELS[0], n: "1", prompt: colorPrompt, size: IMAGE_SIZES[0] || "1024x1024" };
-    const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
-    let result;
-    try {
-      const multipart = buildMultipartBody({ fields, file });
-      const upstream = await fetch(`${AI_BASE_URL}/images/edits`, { body: multipart.body, headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": multipart.contentType }, method: "POST" });
-      result = { ok: upstream.ok, result: await upstream.json().catch(() => ({})), status: upstream.status };
-    } catch { result = await requestImageEditWithPowerShell({ apiKey: API_KEY, fields, file }); }
-    if (!result.ok) { sendJson(response, result.status || 500, { error: getImageErrorMessage(result.result) }); return; }
-    const genImg = extractGeneratedImage(result.result);
-    if (!genImg) { sendJson(response, 500, { error: "coloring_failed" }); return; }
-    sendJson(response, 200, { image: genImg, model: IMAGE_MODELS[0], source: "ai" });
+    const colorPrompt = "Add child-friendly coloring to this line drawing. Use warm, harmonious colors. Preserve ALL original lines - do not erase or cover any lines. Color gently within existing outlines. Keep hand-drawn childlike quality. Crayon or colored-pencil texture. Only add color, no new objects.";
+    
+    // Try multiple models
+    const modelsToTry = ["qwen-image-edit-2509", "gpt-image-1.5", "gpt-image-1", "flux.1-kontext-pro", "gpt-image-2"];
+    let lastError = null;
+    
+    for (const model of modelsToTry) {
+      try {
+        const fields = { model, n: "1", prompt: colorPrompt, size: "1024x1024" };
+        const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
+        const multipart = buildMultipartBody({ fields, file });
+        const upstream = await fetch(`${AI_BASE_URL}/images/edits`, {
+          body: multipart.body, headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": multipart.contentType }, method: "POST",
+        });
+        const result = { ok: upstream.ok, result: await upstream.json().catch(() => ({})), status: upstream.status };
+        if (result.ok) {
+          const genImg = extractGeneratedImage(result.result);
+          if (genImg) {
+            writeServerLog("colorize_success", { model });
+            sendJson(response, 200, { image: genImg, model, source: "ai" });
+            return;
+          }
+          lastError = new Error("empty_image_result");
+        } else {
+          lastError = new Error(getImageErrorMessage(result.result));
+          writeServerLog("colorize_model_failed", { model, error: lastError.message, status: result.status });
+        }
+      } catch (e) {
+        lastError = e;
+        writeServerLog("colorize_model_error", { model, error: e.message });
+        // Try PowerShell fallback
+        try {
+          const fields = { model, n: "1", prompt: colorPrompt, size: "1024x1024" };
+          const file = { fieldName: "image", fileName: sanitizeMultipartFilename("artwork", extension), mimeType, buffer };
+          const psResult = await requestImageEditWithPowerShell({ apiKey: API_KEY, fields, file });
+          if (psResult.ok) {
+            const genImg = extractGeneratedImage(psResult.result);
+            if (genImg) {
+              writeServerLog("colorize_success_ps", { model });
+              sendJson(response, 200, { image: genImg, model, source: "ai" });
+              return;
+            }
+          }
+        } catch {}
+      }
+    }
+    sendJson(response, 500, { error: lastError?.message || "所有模型上色均失败，请稍后重试" });
   } catch { sendJson(response, 400, { error: "请求格式错误" }); }
 }
 
