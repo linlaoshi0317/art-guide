@@ -382,7 +382,7 @@ const labels = {
 const responseSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["teacherCopy", "psychologyAnalysis", "familyEducation", "projectionAnalysis", "talentInsight"],
+  required: ["teacherCopy", "psychologyAnalysis", "familyEducation", "projectionAnalysis", "talentInsight", "parentWording"],
   properties: {
     teacherCopy: {
       type: "string",
@@ -470,6 +470,27 @@ const responseSchema = {
           maxItems: 4,
           items: { type: "string" },
           description: "天赋证据清单。每条格式：'[画面位置]的[具体元素]→说明[天赋表现]'。必须标注位置。",
+        },
+      },
+    },
+    parentWording: {
+      type: "object",
+      additionalProperties: false,
+      required: ["shouldSay", "shouldNotSay"],
+      properties: {
+        shouldSay: {
+          type: "array",
+          minItems: 2,
+          maxItems: 4,
+          items: { type: "string" },
+          description: "【家长应该说的话】基于蔺老师反馈话术体系，结合这幅具体画面给出家长可以直接对孩子说的原句。每条必须是对应画面具体内容的完整句子。参考话术：'可以给我介绍一下你的画吗？''我看到这里有一条很长的线''你画这个地方特别仔细，看来它对你很重要''这次你比上次多画了很多细节，你自己觉得哪里最满意？'",
+        },
+        shouldNotSay: {
+          type: "array",
+          minItems: 2,
+          maxItems: 4,
+          items: { type: "string" },
+          description: "【家长不应该说的话】基于蔺老师家庭美育干扰理论，结合这幅画面给出家长应避免说的话。参考禁忌：'你画的是什么？''怎么不像？''别人画得比你好''真棒太好了（空泛）'。每条需结合画面特征说明为什么不能说。",
         },
       },
     },
@@ -1105,6 +1126,10 @@ function normalizeAnalysis(value) {
     talentInsight: {
       primaryTalent: typeof ti.primaryTalent === "string" ? ti.primaryTalent.trim() : "",
       evidenceList: Array.isArray(ti.evidenceList) ? ti.evidenceList.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
+    },
+    parentWording: {
+      shouldSay: Array.isArray(value.parentWording?.shouldSay) ? value.parentWording.shouldSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
+      shouldNotSay: Array.isArray(value.parentWording?.shouldNotSay) ? value.parentWording.shouldNotSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [],
     },
   };
 }
