@@ -167,13 +167,9 @@ export function App() {
         <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>2</span> 选择画风并生成</div><select value={styleId} onChange={e => { setStyleId(e.target.value); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); }} style={st.select}>{styleGroups.map(g => <optgroup key={g.label} label={g.label}>{g.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</optgroup>)}</select><p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>{selStyle.summary}</p>
           <textarea placeholder="补充说明（可选）" value={gNote} onChange={e => setGNote(e.target.value)} rows={2} style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, marginBottom: 12, resize: "vertical" }} />
           <button onClick={runGuidance} disabled={gStatus === "generating" || !preview || !childAge} style={gStatus === "generating" || !preview || !childAge ? st.btnDisabled : st.btnPrimary}>{!childAge && preview ? "请先选择年龄段" : gStatus === "generating" ? <><RefreshCcw size={18} className="spinning" />AI 优化中...</> : <><Sparkles size={18} />{C.guideAction}</>}</button></div>
-        {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>3</span> 对比结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div>
+        {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>3</span> 生成结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div>
           {gResults.length > 0 && gResults[0].colorized ? <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ textAlign: "center" }}><div style={{ ...st.compareLabel, color: "#b8a99a", marginBottom: 4 }}>📐 优化线稿</div><img src={gResults[0].lineArtImage} alt="" style={{ width: "100%", height: "auto", borderRadius: 14, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].lineArtImage, title: "优化线稿" })} /><a href={gResults[0].lineArtImage} download="优化线稿.png" style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存</a></div>
-              <div style={{ textAlign: "center" }}><div style={{ ...st.compareLabel, color: "#E07B39", marginBottom: 4 }}>🎨 上色效果</div><img src={gResults[0].image} alt="" style={{ width: "100%", height: "auto", borderRadius: 14, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: "上色效果" })} /><a href={gResults[0].image} download="上色效果.png" style={{ display: "inline-block", marginTop: 4, fontSize: 10, color: "#9b8c7c", textDecoration: "none" }} onClick={e => e.stopPropagation()}>💾 保存</a></div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><span style={{ ...st.compareLabel, margin: 0 }}>{C.original}</span><span style={{ color: "#d4c8b8" }}>→</span><span style={{ ...st.compareLabel, margin: 0, color: "#E07B39" }}>优化后</span></div>
+            <div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>→</div><div><div style={{ ...st.compareLabel, color: "#E07B39" }}>🎨 优化效果</div><img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: "优化效果" })} /></div></div>
           </> : <>
             <div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div>{gResults.length > 0 ? <img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}</div></div>
           </>}
@@ -235,7 +231,7 @@ export function App() {
         </div>
         <div style={st.card}><h3 style={st.h3}>🖼️ {C.generationHistory} <span style={{ fontSize: 12, color: "#aaa", fontWeight: 400 }}>（{gHistory.length}条）</span></h3>
           {gHistory.length === 0 ? <div style={{ textAlign: "center", padding: 30, color: "#888" }}><p style={{ margin: 0 }}>{C.noGenerationHistory}</p><p style={{ ...st.textSmall, marginTop: 8 }}>{C.generationHistoryHint}</p></div>
-          : gHistory.map(h => <div key={h.id} style={{ ...st.recordItem, cursor: "pointer" }} onClick={() => setPreviewImage({ src: h.lineArtImage || h.generatedImage, title: h.fileName, lineArt: h.lineArtImage, colored: h.lineArtImage ? h.generatedImage : null })}>
+          : gHistory.map(h => <div key={h.id} style={{ ...st.recordItem, cursor: "pointer" }} onClick={() => setPreviewImage({ src: h.generatedImage, title: h.fileName })}>
             <img src={h.generatedImage} alt="" style={st.thumb} />
             <div style={{ flex: 1 }}><strong style={{ fontSize: 14 }}>{h.fileName}</strong><br /><span style={st.textSmall}>{h.createdAt} · {h.styleName}{h.lineArtImage ? " · 已上色" : ""}</span></div>
           </div>)}
@@ -245,10 +241,7 @@ export function App() {
 
     <input ref={fiRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
-      {previewImage.lineArt && previewImage.colored ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 12px 12px" }}>
-        <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#b8a99a", marginBottom: 4 }}>📐 线稿</div><img src={previewImage.lineArt} alt="" style={{ width: "100%", maxHeight: "70vh", objectFit: "contain", borderRadius: 10 }} /></div>
-        <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, color: "#E07B39", marginBottom: 4 }}>🎨 上色</div><img src={previewImage.colored} alt="" style={{ width: "100%", maxHeight: "70vh", objectFit: "contain", borderRadius: 10 }} /></div>
-      </div> : <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />}
+      <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
     {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center", padding: "32px 28px" }} ref={rptRef}>
       {/* Report Header */}
@@ -317,20 +310,8 @@ export function App() {
 
       {/* Optimized Image(s) */}
       {gResults.length > 0 && <div style={{ marginBottom: 24 }}>
-        {gResults[0].colorized && gResults[0].lineArtImage ? <>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
-          <div style={{ textAlign: "center", marginBottom: 18 }}>
-            <div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>📐 优化线稿</div>
-            <img src={gResults[0].lineArtImage} alt="" style={{ maxWidth: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 4 }} />
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "#E07B39", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>🎨 上色效果</div>
-            <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }} />
-          </div>
-        </> : <>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
-          <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
-        </>}
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
+        <img src={gResults[0].lineArtImage && gResults[0].colorized ? gResults[0].image : gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
       </div>}
 
       {/* Footer */}
