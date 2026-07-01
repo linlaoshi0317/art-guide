@@ -142,27 +142,8 @@ export function App() {
 
     setExporting(true);
 
-    // 创建全屏遮罩，隐藏 DOM 变化
-    const mask = document.createElement("div");
-    mask.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-family:sans-serif;letter-spacing:0.06em;";
-    mask.textContent = "📋 导出中...";
-    document.body.appendChild(mask);
-    await new Promise(r => requestAnimationFrame(r));
-
-    const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
-    let ac = null;
-
     try {
-      const im = window.innerWidth < 860;
-      el.style.width = im ? "600px" : "1000px";
-      el.style.maxWidth = im ? "600px" : "1000px";
-      el.style.maxHeight = "none";
-      el.style.overflow = "visible";
-      el.style.background = "#fdfaf5";
-
-      ac = el.querySelector(".report-actions");
-      if (ac) ac.style.display = "none";
-
+      // 等待图片加载
       const imgs = el.querySelectorAll("img");
       await Promise.all(Array.from(imgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
@@ -171,38 +152,49 @@ export function App() {
 
       await new Promise(r => setTimeout(r, 300));
 
+      const isMobile = window.innerWidth < 860;
+
+      // ★ onclone：在克隆文档里改样式，用户屏幕完全不碰
       const cv = await window.html2canvas(el, {
-        scale: 2, useCORS: true, allowTaint: true,
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
         backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight, height: el.scrollHeight
+        windowHeight: el.scrollHeight,
+        height: el.scrollHeight,
+        onclone: function(clonedDoc) {
+          const report = clonedDoc.getElementById("report-container");
+          if (report) {
+            report.style.width = isMobile ? "600px" : "1000px";
+            report.style.maxWidth = isMobile ? "600px" : "1000px";
+            report.style.maxHeight = "none";
+            report.style.overflow = "visible";
+            report.style.background = "#fdfaf5";
+            report.style.textAlign = "left";
+          }
+          const actions = clonedDoc.querySelector(".report-actions");
+          if (actions) actions.style.display = "none";
+        }
       });
 
-      // 恢复 DOM 样式（遮罩还在，用户看不到）
-      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
-      if (ac) ac.style.display = "";
-
       const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
-      const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
+      const uaMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
 
-      // 移除遮罩
-      mask.remove();
-
-      // 移动端：系统分享存相册
-      if (isMobile && navigator.share && navigator.canShare) {
+      // 手机：系统分享存相册
+      if (uaMobile && navigator.share && navigator.canShare) {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({ files: [file], title: "学员测评单" });
             setExporting(false);
             return;
-          } catch {} // 取消 → 走下载
+          } catch {}
         }
       }
 
       // 下载
       const url = URL.createObjectURL(blob);
-      if (isMobile) {
-        // 手机备选：新窗口打开长图，可长按保存
+      if (uaMobile) {
         const w = window.open(url, "_blank");
         if (!w) {
           const a = document.createElement("a");
@@ -217,15 +209,10 @@ export function App() {
 
     } catch (e) {
       console.error("导出失败:", e);
-      mask.remove();
       setToastMsg("导出失败，请重试");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } finally {
-      // 确保遮罩和样式都已恢复
-      if (mask.parentNode) mask.remove();
-      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
-      if (ac) ac.style.display = "";
       setExporting(false);
     }
   }
@@ -332,7 +319,7 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "left" }} ref={rptRef}>
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div id="report-container" style={{ ...st.modalScroll, textAlign: "left" }} ref={rptRef}>
       {/* 全局样式 + 纸质纹理 */}
       <style>{`
         .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
