@@ -293,6 +293,7 @@ export function App() {
           </div>}
 
           {isDone && <div style={st.resultActions}><button onClick={handleSave} style={st.btnSecondary}><Save size={16} /> {saved ? C.saved : C.save}</button><button onClick={() => setShowReport(true)} style={st.btnAccent}><FileText size={16} /> {C.viewReport}</button></div>}
+          {status === "analyzing" && <div style={st.resultActions}><span style={{ color: "#9b8c7c", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><RefreshCcw size={14} className="spinning" /> 分析生成中……</span></div>}
         </div>}
       </div>}
 
