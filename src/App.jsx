@@ -161,6 +161,9 @@ export function App() {
 
       const isMobile = window.innerWidth < 860;
       const scale = isMobile ? 2 : 3;
+      // 系统分享检测：iOS/Android/鸿蒙都覆盖
+      const canShare = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent)
+        && navigator.share && navigator.canShare;
 
       const cv = await window.html2canvas(el, {
         scale,
@@ -192,8 +195,8 @@ export function App() {
         }
       }
 
-      // 移动端系统分享 → 存相册
-      if (isMobile && navigator.share && navigator.canShare) {
+      // 系统分享 → 存相册（iOS/Android/鸿蒙均支持）
+      if (canShare) {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: "学员测评单" });
