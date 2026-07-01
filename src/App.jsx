@@ -110,6 +110,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState("analysis"), [showReport, setShowReport] = useState(false), [previewImage, setPreviewImage] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [authToken, setAuthToken] = useState(() => { try { return localStorage.getItem("art_token") || ""; } catch { return ""; } });
   const [authUser, setAuthUser] = useState(null);
@@ -135,7 +136,88 @@ export function App() {
   async function handleAuth() { setAuthError(""); setAuthLoading(true); try { const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login"; const body = authMode === "register" ? { email: authEmail, password: authPassword, inviteCode: authInviteCode } : { email: authEmail, password: authPassword }; const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) { setAuthError(data.error || "操作失败"); return; } setAuthToken(data.token); setAuthUser(data.user); localStorage.setItem("art_token", data.token); setShowSettings(false); } catch { setAuthError("网络错误"); } finally { setAuthLoading(false); } }
   function handleLogout() { setAuthToken(""); setAuthUser(null); localStorage.removeItem("art_token"); }
 
-  async function exportReport() { const el = rptRef.current; if (!el || !window.html2canvas) return; try { const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background }; const im = window.innerWidth < 860; el.style.width = im ? "600px" : "1000px"; el.style.maxWidth = im ? "600px" : "1000px"; el.style.maxHeight = "none"; el.style.overflow = "visible"; el.style.background = "#fdfaf5"; const ac = el.querySelector(".report-actions"); if (ac) ac.style.display = "none"; const imgs = el.querySelectorAll("img"); await Promise.all(Array.from(imgs).map(i => new Promise(r => { if (i.complete && i.naturalWidth > 0) r(); else { i.onload = r; i.onerror = r; setTimeout(r, 5000); } }))); await new Promise(r => setTimeout(r, 300)); const cv = await window.html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#fdfaf5", windowHeight: el.scrollHeight, height: el.scrollHeight }); Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg }); if (ac) ac.style.display = ""; const blob = await new Promise(r => cv.toBlob(r, "image/png", 1)); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.download = "学员测评单.png"; a.href = url; a.click(); URL.revokeObjectURL(url); } catch { window.print(); } }
+  async function exportReport() {
+    const el = rptRef.current;
+    if (!el) return;
+
+    // html2canvas 未加载时提示用户
+    if (!window.html2canvas) {
+      setToastMsg("导出组件加载中，请稍后再试");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
+      const im = window.innerWidth < 860;
+      el.style.width = im ? "600px" : "1000px";
+      el.style.maxWidth = im ? "600px" : "1000px";
+      el.style.maxHeight = "none";
+      el.style.overflow = "visible";
+      el.style.background = "#fdfaf5";
+
+      const ac = el.querySelector(".report-actions");
+      if (ac) ac.style.display = "none";
+
+      const imgs = el.querySelectorAll("img");
+      await Promise.all(Array.from(imgs).map(i => new Promise(r => {
+        if (i.complete && i.naturalWidth > 0) r();
+        else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
+      })));
+
+      await new Promise(r => setTimeout(r, 300));
+
+      const cv = await window.html2canvas(el, {
+        scale: 2, useCORS: true, allowTaint: true,
+        backgroundColor: "#fdfaf5",
+        windowHeight: el.scrollHeight, height: el.scrollHeight
+      });
+
+      // 恢复原始样式
+      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
+      if (ac) ac.style.display = "";
+
+      const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // 移动端优先使用系统分享（可保存到相册）
+      if (isMobile && navigator.share && navigator.canShare) {
+        const file = new File([blob], "学员测评单.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: "学员测评单" });
+          setExporting(false);
+          return;
+        }
+      }
+
+      // 桌面端 / 不支持分享的设备：传统下载
+      const url = URL.createObjectURL(blob);
+      if (isMobile) {
+        // 移动端备选：新窗口打开图片，长按即可保存
+        const w = window.open(url, "_blank");
+        if (!w) {
+          const a = document.createElement("a");
+          a.href = url; a.download = "学员测评单.png";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+      } else {
+        const a = document.createElement("a");
+        a.download = "学员测评单.png"; a.href = url; a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    } catch (e) {
+      console.error("导出失败:", e);
+      setToastMsg("导出失败，请重试");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const a = analysis, pa = a.psychologyAnalysis, fe = a.familyEducation, pr = a.projectionAnalysis, ti = a.talentInsight, pw = a.parentWording;
 
@@ -344,7 +426,7 @@ export function App() {
         <p className="report-footer">{C.strengthClosing}</p>
       </div>
       </div>
-    </div><div style={st.modalActions} className="report-actions"><button onClick={() => setShowReport(false)} style={st.btnSecondary}><X size={16} /> {C.closePreview}</button><button onClick={exportReport} style={st.btnAccent}><Download size={16} /> {C.downloadReport}</button></div></div></div>}
+    </div><div style={st.modalActions} className="report-actions"><button onClick={() => setShowReport(false)} style={st.btnSecondary}><X size={16} /> {C.closePreview}</button><button onClick={exportReport} disabled={exporting} style={exporting ? st.btnDisabled : st.btnAccent}>{exporting ? <><RefreshCcw size={16} className="spinning" /> 导出中...</> : <><Download size={16} /> {C.downloadReport}</>}</button></div></div></div>}
     <nav style={st.nav}><button onClick={() => setActiveTab("analysis")} style={st.navBtn(activeTab === "analysis")}><Search size={20} /><span>分析</span></button><button onClick={() => setActiveTab("records")} style={st.navBtn(activeTab === "records")}><FileText size={20} /><span>记录</span></button></nav>
 
     {/* Toast */}
