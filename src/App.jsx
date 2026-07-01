@@ -261,8 +261,14 @@ export function App() {
       <div style={{ textAlign: "center", marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid #e8dcc8" }}>
         <div style={{ fontSize: 11, color: "#c4b088", letterSpacing: "0.15em", marginBottom: 8, fontWeight: 600 }}>CHILDREN'S ART ASSESSMENT</div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: "#3d2e1f", margin: "0 0 8px", letterSpacing: "-0.01em", fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>{C.reportTitle}</h1>
-        <p style={{ fontSize: 13, color: "#9b8970", margin: 0, letterSpacing: "0.03em" }}>{childName ? `${childName} · ` : ""}{fileName || C.newArtwork} ｜ 年龄：{childAge || "未选择"}</p>
+        <p style={{ fontSize: 13, color: "#9b8970", margin: 0, letterSpacing: "0.03em" }}>姓名：{childName || "未填写"}　　年龄：{childAge || "未选择"}</p>
       </div>
+
+      {/* Original Image */}
+      {preview && <div style={{ marginBottom: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🎨 原画</div>
+        <img src={preview} alt="" className="report-img" style={{ maxHeight: 380 }} />
+      </div>}
 
       {/* Teacher Comment */}
       {a.teacherCopy && <div className="report-highlight">
