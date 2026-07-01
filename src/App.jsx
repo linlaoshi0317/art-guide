@@ -352,21 +352,24 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef}>
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "left" }} ref={rptRef}>
       {/* 全局样式 + 纸质纹理 */}
       <style>{`
         .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
-        .report-card { background: rgba(255,255,255,0.75); border-radius: 14px; padding: 22px 20px; margin-bottom: 18px; border: 1px solid rgba(180,160,140,0.15); box-shadow: 0 1px 3px rgba(140,110,70,0.06); }
-        .report-h2 { font-size: 17px; font-weight: 700; color: #3d2e1f; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
-        .report-h3 { font-size: 11px; color: #b8a088; font-weight: 700; margin: 0 0 4px; letter-spacing: 0.1em; text-transform: uppercase; }
-        .report-p { font-size: 14px; color: #4a3828; line-height: 1.85; margin: 0; }
-        .report-divider { height: 1px; background: linear-gradient(90deg, transparent, #d4c4b0, transparent); margin: 24px 0; border: none; }
+        .report-card { background: rgba(255,255,255,0.75); border-radius: 14px; padding: 24px 20px; margin-bottom: 20px; border: 1px solid rgba(180,160,140,0.15); box-shadow: 0 1px 3px rgba(140,110,70,0.06); text-align: left; }
+        .report-h2 { font-size: 17px; font-weight: 700; color: #3d2e1f; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
+        .report-h3 { font-size: 11px; color: #b8a088; font-weight: 700; margin: 0 0 6px; letter-spacing: 0.1em; text-transform: uppercase; }
+        .report-p { font-size: 14px; color: #4a3828; line-height: 1.9; margin: 0 0 12px; }
+        .report-p:last-child { margin-bottom: 0; }
+        .report-divider { height: 1px; background: linear-gradient(90deg, transparent, #d4c4b0, transparent); margin: 28px 0; border: none; }
         .report-img { max-width: 100%; border-radius: 12px; box-shadow: 0 2px 16px rgba(80,50,20,0.1); border: 1px solid rgba(180,160,140,0.15); }
         .report-tag { display: inline-block; background: #faf3e8; color: #b87a4a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; letter-spacing: 0.03em; }
-        .report-highlight { background: linear-gradient(135deg, #fdf6ee, #fef9f3); border-left: 3px solid #E07B39; border-radius: 0 12px 12px 0; padding: 16px 18px; margin-bottom: 18px; }
+        .report-highlight { background: linear-gradient(135deg, #fdf6ee, #fef9f3); border-left: 3px solid #E07B39; border-radius: 0 12px 12px 0; padding: 18px 20px; margin-bottom: 20px; text-align: left; }
+        .report-section { margin-bottom: 14px; }
+        .report-section:last-child { margin-bottom: 0; }
         .report-footer { color: #c4b4a0; font-size: 11px; font-style: italic; }
         @media (min-width: 860px) {
-          .report-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+          .report-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         }
       `}</style>
       <div className="report-paper" style={{ padding: "40px 32px 32px", fontFamily: "'Noto Serif SC', 'PingFang SC', 'Noto Sans SC', serif", color: "#3d2e1f" }}>
@@ -393,9 +396,9 @@ export function App() {
       {(pa.emotionState || pa.securityLevel || pa.selfCognition) && <div className="report-card">
         <h2 className="report-h2"><span style={{ fontSize: 20 }}>🧠</span> 心理分析</h2>
         <div className="report-grid2">
-          {pa.emotionState && <div><div className="report-h3">情绪状态</div><p className="report-p" style={{ fontSize: 13 }}>{pa.emotionState}</p></div>}
-          {pa.securityLevel && <div><div className="report-h3">安全感</div><p className="report-p" style={{ fontSize: 13 }}>{pa.securityLevel}</p></div>}
-          {pa.selfCognition && <div><div className="report-h3">自我认知</div><p className="report-p" style={{ fontSize: 13 }}>{pa.selfCognition}</p></div>}
+          {pa.emotionState && <div><div className="report-h3">情绪状态</div><p className="report-p">{pa.emotionState}</p></div>}
+          {pa.securityLevel && <div><div className="report-h3">安全感</div><p className="report-p">{pa.securityLevel}</p></div>}
+          {pa.selfCognition && <div><div className="report-h3">自我认知</div><p className="report-p">{pa.selfCognition}</p></div>}
         </div>
         {pa.keyEvidence.length > 0 && <div style={{ marginTop: 14 }}><div className="report-h3" style={{ marginBottom: 8 }}>关键证据</div><div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{pa.keyEvidence.map((e, i) => <span key={i} className="report-tag">{e}</span>)}</div></div>}
       </div>}
@@ -403,8 +406,8 @@ export function App() {
       {/* Family Education */}
       {(fe.parentInterference || fe.strengthPotential || fe.actionSuggestions.length > 0) && <div className="report-card">
         <h2 className="report-h2"><span style={{ fontSize: 20 }}>🏠</span> 家庭教育</h2>
-        {fe.parentInterference && <div style={{ marginBottom: 12 }}><div className="report-h3">可能的干扰</div><p className="report-p" style={{ fontSize: 13 }}>{fe.parentInterference}</p></div>}
-        {fe.strengthPotential && <div style={{ marginBottom: 12 }}><div className="report-h3">优势潜能</div><p className="report-p" style={{ fontSize: 13 }}>{fe.strengthPotential}</p></div>}
+        {fe.parentInterference && <div className="report-section"><div className="report-h3">可能的干扰</div><p className="report-p">{fe.parentInterference}</p></div>}
+        {fe.strengthPotential && <div className="report-section"><div className="report-h3">优势潜能</div><p className="report-p">{fe.strengthPotential}</p></div>}
         {fe.actionSuggestions.length > 0 && <div><div className="report-h3" style={{ marginBottom: 8 }}>行动建议</div><ol style={{ paddingLeft: 18, margin: 0, fontSize: 13, color: "#4a3828", lineHeight: 2 }}>{fe.actionSuggestions.map((s, i) => <li key={i} style={{ paddingLeft: 4 }}>{s}</li>)}</ol></div>}
       </div>}
 
@@ -412,9 +415,9 @@ export function App() {
       {(pr.attentionProjection || pr.relationshipProjection || pr.needProjection) && <div className="report-card">
         <h2 className="report-h2"><span style={{ fontSize: 20 }}>🔍</span> 心理投射</h2>
         <div className="report-grid2">
-          {pr.attentionProjection && <div><div className="report-h3">注意力投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.attentionProjection}</p></div>}
-          {pr.relationshipProjection && <div><div className="report-h3">关系投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.relationshipProjection}</p></div>}
-          {pr.needProjection && <div><div className="report-h3">需求投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.needProjection}</p></div>}
+          {pr.attentionProjection && <div><div className="report-h3">注意力投射</div><p className="report-p">{pr.attentionProjection}</p></div>}
+          {pr.relationshipProjection && <div><div className="report-h3">关系投射</div><p className="report-p">{pr.relationshipProjection}</p></div>}
+          {pr.needProjection && <div><div className="report-h3">需求投射</div><p className="report-p">{pr.needProjection}</p></div>}
         </div>
       </div>}
 
