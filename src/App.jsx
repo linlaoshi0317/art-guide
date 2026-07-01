@@ -135,7 +135,7 @@ export function App() {
   async function handleAuth() { setAuthError(""); setAuthLoading(true); try { const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login"; const body = authMode === "register" ? { email: authEmail, password: authPassword, inviteCode: authInviteCode } : { email: authEmail, password: authPassword }; const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) { setAuthError(data.error || "操作失败"); return; } setAuthToken(data.token); setAuthUser(data.user); localStorage.setItem("art_token", data.token); setShowSettings(false); } catch { setAuthError("网络错误"); } finally { setAuthLoading(false); } }
   function handleLogout() { setAuthToken(""); setAuthUser(null); localStorage.removeItem("art_token"); }
 
-  async function exportReport() { const el = rptRef.current; if (!el || !window.html2canvas) return; try { const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, fs: el.style.fontSize }; const im = window.innerWidth < 860; el.style.width = im ? "600px" : "1240px"; el.style.maxWidth = im ? "600px" : "1240px"; el.style.maxHeight = "none"; el.style.overflow = "visible"; el.style.fontSize = "24px"; const ac = el.querySelector(".report-actions"); if (ac) ac.style.display = "none"; const imgs = el.querySelectorAll("img"); await Promise.all(Array.from(imgs).map(i => new Promise(r => { if (i.complete && i.naturalWidth > 0) r(); else { i.onload = r; i.onerror = r; setTimeout(r, 5000); } }))); await new Promise(r => setTimeout(r, 200)); const cv = await window.html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", windowHeight: el.scrollHeight, height: el.scrollHeight }); Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, fontSize: orig.fs }); if (ac) ac.style.display = ""; const blob = await new Promise(r => cv.toBlob(r, "image/png", 1)); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.download = "学员测评单.png"; a.href = url; a.click(); URL.revokeObjectURL(url); } catch { window.print(); } }
+  async function exportReport() { const el = rptRef.current; if (!el || !window.html2canvas) return; try { const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background }; const im = window.innerWidth < 860; el.style.width = im ? "600px" : "1000px"; el.style.maxWidth = im ? "600px" : "1000px"; el.style.maxHeight = "none"; el.style.overflow = "visible"; el.style.background = "#fdfaf5"; const ac = el.querySelector(".report-actions"); if (ac) ac.style.display = "none"; const imgs = el.querySelectorAll("img"); await Promise.all(Array.from(imgs).map(i => new Promise(r => { if (i.complete && i.naturalWidth > 0) r(); else { i.onload = r; i.onerror = r; setTimeout(r, 5000); } }))); await new Promise(r => setTimeout(r, 300)); const cv = await window.html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#fdfaf5", windowHeight: el.scrollHeight, height: el.scrollHeight }); Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg }); if (ac) ac.style.display = ""; const blob = await new Promise(r => cv.toBlob(r, "image/png", 1)); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.download = "学员测评单.png"; a.href = url; a.click(); URL.revokeObjectURL(url); } catch { window.print(); } }
 
   const a = analysis, pa = a.psychologyAnalysis, fe = a.familyEducation, pr = a.projectionAnalysis, ti = a.talentInsight, pw = a.parentWording;
 
@@ -239,80 +239,105 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center", padding: "32px 28px" }} ref={rptRef}>
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef}>
+      {/* 全局样式 + 纸质纹理 */}
+      <style>{`
+        .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
+        .report-card { background: rgba(255,255,255,0.75); border-radius: 14px; padding: 22px 20px; margin-bottom: 18px; border: 1px solid rgba(180,160,140,0.15); box-shadow: 0 1px 3px rgba(140,110,70,0.06); }
+        .report-h2 { font-size: 17px; font-weight: 700; color: #3d2e1f; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
+        .report-h3 { font-size: 11px; color: #b8a088; font-weight: 700; margin: 0 0 4px; letter-spacing: 0.1em; text-transform: uppercase; }
+        .report-p { font-size: 14px; color: #4a3828; line-height: 1.85; margin: 0; }
+        .report-divider { height: 1px; background: linear-gradient(90deg, transparent, #d4c4b0, transparent); margin: 24px 0; border: none; }
+        .report-img { max-width: 100%; border-radius: 12px; box-shadow: 0 2px 16px rgba(80,50,20,0.1); border: 1px solid rgba(180,160,140,0.15); }
+        .report-tag { display: inline-block; background: #faf3e8; color: #b87a4a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; letter-spacing: 0.03em; }
+        .report-highlight { background: linear-gradient(135deg, #fdf6ee, #fef9f3); border-left: 3px solid #E07B39; border-radius: 0 12px 12px 0; padding: 16px 18px; margin-bottom: 18px; }
+        .report-footer { color: #c4b4a0; font-size: 11px; font-style: italic; }
+        @media (min-width: 860px) {
+          .report-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        }
+      `}</style>
+      <div className="report-paper" style={{ padding: "40px 32px 32px", fontFamily: "'Noto Serif SC', 'PingFang SC', 'Noto Sans SC', serif", color: "#3d2e1f" }}>
       {/* Report Header */}
-      <div style={{ marginBottom: 32, paddingBottom: 20, borderBottom: "2px solid #f0ebe0" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: "#1a1a1a", margin: "0 0 8px", letterSpacing: "-0.02em" }}>{C.reportTitle}</h1>
-        <p style={{ fontSize: 14, color: "#9b8c7c", margin: 0 }}>{childName ? `${childName} · ` : ""}{fileName || C.newArtwork} ｜ 年龄：{childAge || "未选择"}</p>
+      <div style={{ textAlign: "center", marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid #e8dcc8" }}>
+        <div style={{ fontSize: 11, color: "#c4b088", letterSpacing: "0.15em", marginBottom: 8, fontWeight: 600 }}>CHILDREN'S ART ASSESSMENT</div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#3d2e1f", margin: "0 0 8px", letterSpacing: "-0.01em", fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>{C.reportTitle}</h1>
+        <p style={{ fontSize: 13, color: "#9b8970", margin: 0, letterSpacing: "0.03em" }}>{childName ? `${childName} · ` : ""}{fileName || C.newArtwork} ｜ 年龄：{childAge || "未选择"}</p>
       </div>
 
       {/* Teacher Comment */}
-      {a.teacherCopy && <div style={{ marginBottom: 24, textAlign: "left", background: "#fdfcf9", borderRadius: 16, padding: "20px 22px", border: "1px solid #f0ebe0" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#E07B39", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>📝</span> 老师点评</h3>
-        <p style={{ fontSize: 15, lineHeight: 1.9, color: "#3d3226", margin: 0 }}>{a.teacherCopy}</p>
+      {a.teacherCopy && <div className="report-highlight">
+        <div style={{ fontSize: 11, color: "#E07B39", fontWeight: 700, marginBottom: 8, letterSpacing: "0.1em" }}>📝 老师点评</div>
+        <p className="report-p">{a.teacherCopy}</p>
       </div>}
 
       {/* Psychology */}
-      {pa.emotionState && <div style={{ marginBottom: 24, textAlign: "left" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>🧠</span> 心理分析</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {pa.emotionState && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>情绪状态</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pa.emotionState}</p></div>}
-          {pa.securityLevel && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>安全感</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pa.securityLevel}</p></div>}
-          {pa.selfCognition && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>自我认知</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pa.selfCognition}</p></div>}
+      {(pa.emotionState || pa.securityLevel || pa.selfCognition) && <div className="report-card">
+        <h2 className="report-h2"><span style={{ fontSize: 20 }}>🧠</span> 心理分析</h2>
+        <div className="report-grid2">
+          {pa.emotionState && <div><div className="report-h3">情绪状态</div><p className="report-p" style={{ fontSize: 13 }}>{pa.emotionState}</p></div>}
+          {pa.securityLevel && <div><div className="report-h3">安全感</div><p className="report-p" style={{ fontSize: 13 }}>{pa.securityLevel}</p></div>}
+          {pa.selfCognition && <div><div className="report-h3">自我认知</div><p className="report-p" style={{ fontSize: 13 }}>{pa.selfCognition}</p></div>}
         </div>
+        {pa.keyEvidence.length > 0 && <div style={{ marginTop: 14 }}><div className="report-h3" style={{ marginBottom: 8 }}>关键证据</div><div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{pa.keyEvidence.map((e, i) => <span key={i} className="report-tag">{e}</span>)}</div></div>}
       </div>}
 
       {/* Family Education */}
-      {(fe.parentInterference || fe.strengthPotential || fe.actionSuggestions.length > 0) && <div style={{ marginBottom: 24, textAlign: "left" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>🏠</span> 家庭教育</h3>
-        {fe.parentInterference && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, marginBottom: 10, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>可能的干扰</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{fe.parentInterference}</p></div>}
-        {fe.strengthPotential && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, marginBottom: 10, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>优势潜能</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{fe.strengthPotential}</p></div>}
-        {fe.actionSuggestions.length > 0 && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>行动建议</div><ol style={{ paddingLeft: 20, margin: 0, fontSize: 13, color: "#3d3226", lineHeight: 2 }}>{fe.actionSuggestions.map((s, i) => <li key={i}>{s}</li>)}</ol></div>}
+      {(fe.parentInterference || fe.strengthPotential || fe.actionSuggestions.length > 0) && <div className="report-card">
+        <h2 className="report-h2"><span style={{ fontSize: 20 }}>🏠</span> 家庭教育</h2>
+        {fe.parentInterference && <div style={{ marginBottom: 12 }}><div className="report-h3">可能的干扰</div><p className="report-p" style={{ fontSize: 13 }}>{fe.parentInterference}</p></div>}
+        {fe.strengthPotential && <div style={{ marginBottom: 12 }}><div className="report-h3">优势潜能</div><p className="report-p" style={{ fontSize: 13 }}>{fe.strengthPotential}</p></div>}
+        {fe.actionSuggestions.length > 0 && <div><div className="report-h3" style={{ marginBottom: 8 }}>行动建议</div><ol style={{ paddingLeft: 18, margin: 0, fontSize: 13, color: "#4a3828", lineHeight: 2 }}>{fe.actionSuggestions.map((s, i) => <li key={i} style={{ paddingLeft: 4 }}>{s}</li>)}</ol></div>}
       </div>}
 
       {/* Projection */}
-      {(pr.attentionProjection || pr.relationshipProjection || pr.needProjection) && <div style={{ marginBottom: 24, textAlign: "left" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>🔍</span> 心理投射</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {pr.attentionProjection && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>注意力投射</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pr.attentionProjection}</p></div>}
-          {pr.relationshipProjection && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>关系投射</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pr.relationshipProjection}</p></div>}
-          {pr.needProjection && <div style={{ background: "#fdfcf9", borderRadius: 12, padding: 14, border: "1px solid #f0ebe0" }}><div style={{ fontSize: 11, color: "#b8a99a", fontWeight: 600, marginBottom: 4, letterSpacing: "0.04em" }}>需求投射</div><p style={{ fontSize: 13, color: "#3d3226", lineHeight: 1.7, margin: 0 }}>{pr.needProjection}</p></div>}
+      {(pr.attentionProjection || pr.relationshipProjection || pr.needProjection) && <div className="report-card">
+        <h2 className="report-h2"><span style={{ fontSize: 20 }}>🔍</span> 心理投射</h2>
+        <div className="report-grid2">
+          {pr.attentionProjection && <div><div className="report-h3">注意力投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.attentionProjection}</p></div>}
+          {pr.relationshipProjection && <div><div className="report-h3">关系投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.relationshipProjection}</p></div>}
+          {pr.needProjection && <div><div className="report-h3">需求投射</div><p className="report-p" style={{ fontSize: 13 }}>{pr.needProjection}</p></div>}
         </div>
       </div>}
 
       {/* Talent */}
-      {ti.primaryTalent && <div style={{ marginBottom: 24, textAlign: "left", background: "#fdfcf9", borderRadius: 16, padding: "20px 22px", border: "1px solid #f0ebe0" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#E07B39", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>🌟</span> 天赋识别</h3>
-        <p style={{ fontSize: 14, color: "#3d3226", lineHeight: 1.8, margin: 0 }}>{ti.primaryTalent}</p>
+      {ti.primaryTalent && <div className="report-highlight">
+        <div style={{ fontSize: 11, color: "#E07B39", fontWeight: 700, marginBottom: 8, letterSpacing: "0.1em" }}>🌟 天赋识别</div>
+        <p className="report-p">{ti.primaryTalent}</p>
+        {ti.evidenceList.length > 0 && <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 4 }}>{ti.evidenceList.map((e, i) => <span key={i} className="report-tag" style={{ background: "#fef5ee", color: "#c0652a" }}>{e}</span>)}</div>}
       </div>}
 
       {/* Parent Wording */}
-      {pw.shouldSay.length > 0 && <div style={{ marginBottom: 24, textAlign: "left" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>💬</span> 家长引导话术</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div style={{ background: "#f6faf3", borderRadius: 12, padding: 14, border: "1px solid #dcebd4" }}>
-            <div style={{ fontSize: 11, color: "#5a8a3c", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>✅ 建议这样说</div>
-            <ul style={{ paddingLeft: 16, margin: 0, fontSize: 13, color: "#3d3226", lineHeight: 1.9 }}>{pw.shouldSay.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>"{s}"</li>)}</ul>
-          </div>
-          {pw.shouldNotSay.length > 0 && <div style={{ background: "#fef7f5", borderRadius: 12, padding: 14, border: "1px solid #fde8d8" }}>
-            <div style={{ fontSize: 11, color: "#c0392b", fontWeight: 600, marginBottom: 8, letterSpacing: "0.04em" }}>❌ 避免这样说</div>
-            <ul style={{ paddingLeft: 16, margin: 0, fontSize: 13, color: "#3d3226", lineHeight: 1.9 }}>{pw.shouldNotSay.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>"{s}"</li>)}</ul>
+      {(pw.shouldSay.length > 0 || pw.shouldNotSay.length > 0) && <div className="report-card">
+        <h2 className="report-h2"><span style={{ fontSize: 20 }}>💬</span> 家长引导话术</h2>
+        <div className="report-grid2">
+          {pw.shouldSay.length > 0 && <div style={{ background: "#f8faf5", borderRadius: 12, padding: 16, border: "1px solid #e0e8d5" }}>
+            <div style={{ fontSize: 11, color: "#5a8a3c", fontWeight: 700, marginBottom: 10, letterSpacing: "0.06em" }}>✅ 建议这样说</div>
+            <ul style={{ paddingLeft: 16, margin: 0, fontSize: 13, color: "#4a3828", lineHeight: 2 }}>{pw.shouldSay.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>"{s}"</li>)}</ul>
+          </div>}
+          {pw.shouldNotSay.length > 0 && <div style={{ background: "#fef8f6", borderRadius: 12, padding: 16, border: "1px solid #f5ddd5" }}>
+            <div style={{ fontSize: 11, color: "#c0392b", fontWeight: 700, marginBottom: 10, letterSpacing: "0.06em" }}>❌ 避免这样说</div>
+            <ul style={{ paddingLeft: 16, margin: 0, fontSize: 13, color: "#4a3828", lineHeight: 2 }}>{pw.shouldNotSay.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>"{s}"</li>)}</ul>
           </div>}
         </div>
       </div>}
 
+      <hr className="report-divider" />
+
       {/* Original + Optimized Images */}
-      {preview && <div style={{ marginBottom: 24 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🎨</span> 原画</h3>
-        <img src={preview} alt="" style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }} />
+      {preview && <div style={{ marginBottom: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🎨 原画</div>
+        <img src={preview} alt="" className="report-img" style={{ maxHeight: 380 }} />
       </div>}
-      {gResults.length > 0 && <div style={{ marginBottom: 24 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
-        <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
+      {gResults.length > 0 && <div style={{ marginBottom: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🖼️ {C.guideResult}</div>
+        <img src={gResults[0].image} alt="" className="report-img" />
       </div>}
 
       {/* Footer */}
-      <div style={{ paddingTop: 20, borderTop: "2px solid #f0ebe0", textAlign: "center" }}><p style={{ fontSize: 12, color: "#b8a99a", margin: 0, fontStyle: "italic" }}>{C.strengthClosing}</p></div>
+      <div style={{ textAlign: "center", paddingTop: 20, borderTop: "1px solid #e8dcc8" }}>
+        <p className="report-footer">{C.strengthClosing}</p>
+      </div>
+      </div>
     </div><div style={st.modalActions} className="report-actions"><button onClick={() => setShowReport(false)} style={st.btnSecondary}><X size={16} /> {C.closePreview}</button><button onClick={exportReport} style={st.btnAccent}><Download size={16} /> {C.downloadReport}</button></div></div></div>}
     <nav style={st.nav}><button onClick={() => setActiveTab("analysis")} style={st.navBtn(activeTab === "analysis")}><Search size={20} /><span>分析</span></button><button onClick={() => setActiveTab("records")} style={st.navBtn(activeTab === "records")}><FileText size={20} /><span>记录</span></button></nav>
 
