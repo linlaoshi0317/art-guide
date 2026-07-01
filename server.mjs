@@ -924,7 +924,10 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
 
   return [
     "【最高指令 - 必须严格执行】",
-    "不上色！纯黑白线稿！90%保留原画所有线条。只添加与原画内容强关联的背景元素。场景要丰富但不能偏离主题。",
+    "根据原画的风格来优化。90%保留原画所有内容。只添加与原画内容强关联的背景元素。场景要丰富但不能偏离主题。",
+    "",
+    "【色彩策略 - 因材施教，根据原画判断】",
+    "先观察原画：它是彩色画还是黑白线稿？如果是彩色画→优化后保持彩色，色彩风格与原画一致，不要改变原画的配色基调。如果是黑白线稿→可以适当添加柔和色彩，也可以保持线稿风格增强线条层次。绝不把彩色画变成黑白，也不把黑白线稿强行涂满颜色。",
     "",
     "【场景类型强制判断 - 最高优先级】先判断原画主题属于哪类场景，背景必须匹配：",
     "「必定室外」主题（无论原画有没有画背景，必须加室外场景）：",
@@ -961,7 +964,7 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
     "【手绘风格延续 - 关键】",
     "- 仔细观察原画的笔触特征：是蜡笔质感？铅笔线条？水彩笔？马克笔？油画棒？添加的内容必须用相同笔触",
     "- 延续原画的线条风格：如果孩子画得随意潦草→添加部分也要随意潦草；如果孩子画得认真细致→添加部分也要认真细致",
-    "- 纯线稿模式：不添加任何颜色，所有添加内容都是黑白线条，保持线稿风格",
+    "- 色彩跟随原画：原画有颜色→添加的内容也要有颜色且色调协调；原画是线稿→添加的内容也以线条为主，可自然带一点柔和色彩",
     "- 保留原画中的'不完美'：歪斜的线条、不均匀的涂色、超出轮廓的颜色——这些正是儿童画的魅力",
     "- 最终效果应该像同一个孩子在同一张纸上继续画完的作品，而不是两个人合画的",
     "",
@@ -1607,7 +1610,7 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
   };
 }
 
-async function generateGuidanceImage(image, fileName, variant, stylePreset = null, talentType = null, note = "", enableColoring = true) {
+async function generateGuidanceImage(image, fileName, variant, stylePreset = null, talentType = null, note = "") {
   const apiKey = API_KEY;
   if (!apiKey) {
     const error = new Error("missing_api_key");
@@ -2593,10 +2596,6 @@ async function handleGenerateGuidanceImage(request, response) {
       typeof body?.note === "string" && body.note.trim()
         ? body.note.trim()
         : "";
-    const enableColoring =
-      typeof body?.enableColoring === "boolean"
-        ? body.enableColoring
-        : true;
 
     if (typeof image !== "string" || !image.startsWith("data:image/")) {
       addCredits(auth.userId, 1);
@@ -2604,7 +2603,7 @@ async function handleGenerateGuidanceImage(request, response) {
       return;
     }
 
-    const result = await generateGuidanceImage(image, fileName, variant, stylePreset, talentType, note, enableColoring);
+    const result = await generateGuidanceImage(image, fileName, variant, stylePreset, talentType, note);
     sendJson(response, 200, {
       image: result.image,
       model: result.model,
