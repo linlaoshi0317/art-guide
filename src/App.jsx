@@ -149,9 +149,10 @@ export function App() {
     }
 
     setExporting(true);
+    let orig = null, ac = null;
 
     try {
-      const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
+      orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
       const im = window.innerWidth < 860;
       el.style.width = im ? "600px" : "1000px";
       el.style.maxWidth = im ? "600px" : "1000px";
@@ -159,7 +160,7 @@ export function App() {
       el.style.overflow = "visible";
       el.style.background = "#fdfaf5";
 
-      const ac = el.querySelector(".report-actions");
+      ac = el.querySelector(".report-actions");
       if (ac) ac.style.display = "none";
 
       const imgs = el.querySelectorAll("img");
@@ -176,10 +177,6 @@ export function App() {
         windowHeight: el.scrollHeight, height: el.scrollHeight
       });
 
-      // 恢复原始样式
-      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
-      if (ac) ac.style.display = "";
-
       const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -188,7 +185,6 @@ export function App() {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: "学员测评单" });
-          setExporting(false);
           return;
         }
       }
@@ -215,6 +211,11 @@ export function App() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } finally {
+      // ★ 无论如何都要恢复页面样式，防止页面"跑偏"
+      if (orig) {
+        Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
+      }
+      if (ac) ac.style.display = "";
       setExporting(false);
     }
   }
