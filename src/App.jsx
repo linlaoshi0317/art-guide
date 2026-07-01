@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Download, FileText, LogIn, RefreshCcw, Save, Search, Settings, Sparkles, Upload, X } from "lucide-react";
+import "./html2canvas.min.js";
 
 const GBS = 1;
 const C = { newArtwork: "新作品", title: "蔺老师—儿童美育一对一点评指导网", saved: "已保存", save: "保存记录", replace: "更换", artworkAlt: "上传的孩子手绘作品", guideAction: "一键优化", guideGenerating: "正在生成优化图……", guideDone: "已生成优化图", guideFailed: "生成失败", guideFailedHint: "刚刚没生成成功，可以稍后重试。", guideEmpty: "上传作品后点「一键优化」生成优化图。", guideResult: "优化效果", strengthClosing: "父母好好学习，孩子天天向上——先看见孩子，再看见作品。", closePreview: "关闭", styleSelectTitle: "画风方向", styleSelectHint: "可以自动匹配或指定完成风格", styleAuto: "自动根据作品匹配", original: "原画", guided: "优化后", noSavedRecords: "暂无保存记录", noSavedRecordsHint: "分析完成后点「保存记录」在此查看", analysisRecord: "分析记录", justNow: "刚刚", generationHistory: "生成历史", generationHistoryHint: "每次「一键优化」生成的优化图会自动保存在这里", noGenerationHistory: "暂无生成记录", viewReport: "查看测评单", downloadReport: "下载测评单", reportTitle: "学员测评单" };
@@ -124,7 +125,7 @@ export function App() {
   const sName = useMemo(() => SDN(styleGuide), [styleGuide]);
   const isDone = status === "done";
 
-  useEffect(() => { if (!window.html2canvas) { const s = document.createElement("script"); s.src = "https://registry.npmmirror.com/html2canvas/1.4.1/files/dist/html2canvas.min.js"; document.head.appendChild(s); } }, []);
+
 
   async function runAnalysis(fSrc, fMeta) { const seq = ++aSeq.current; setStatus("analyzing"); setASrc("pending"); try { const du = await TDU(fSrc); const ai = await API("/api/analyze", { fileName: fMeta.name || C.newArtwork, image: du, childAge, childName }).then(d => NA(d.analysis || d)).catch(() => null); if (aSeq.current !== seq) return; if (ai) { setAnalysis(ai); setASrc("ai"); } else { setASrc("local"); } } catch { if (aSeq.current === seq) setASrc("local"); } finally { if (aSeq.current === seq) setStatus("done"); } }
 
