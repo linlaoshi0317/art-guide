@@ -142,11 +142,18 @@ export function App() {
     if (!el) return;
 
     setExporting(true);
-    let orig = null, ac = null;
+
+    // 创建全屏遮罩，隐藏 DOM 变化
+    const mask = document.createElement("div");
+    mask.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-family:sans-serif;letter-spacing:0.06em;";
+    mask.textContent = "📋 导出中...";
+    document.body.appendChild(mask);
+    await new Promise(r => requestAnimationFrame(r));
+
+    const orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
+    let ac = null;
 
     try {
-      // 备份原始样式
-      orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
       const im = window.innerWidth < 860;
       el.style.width = im ? "600px" : "1000px";
       el.style.maxWidth = im ? "600px" : "1000px";
@@ -157,7 +164,6 @@ export function App() {
       ac = el.querySelector(".report-actions");
       if (ac) ac.style.display = "none";
 
-      // 等待图片加载
       const imgs = el.querySelectorAll("img");
       await Promise.all(Array.from(imgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
@@ -166,46 +172,60 @@ export function App() {
 
       await new Promise(r => setTimeout(r, 300));
 
-      // 使用与原始版本一致的 html2canvas 配置
       const cv = await window.html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
+        scale: 2, useCORS: true, allowTaint: true,
         backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight,
-        height: el.scrollHeight
+        windowHeight: el.scrollHeight, height: el.scrollHeight
       });
+
+      // 恢复 DOM 样式（遮罩还在，用户看不到）
+      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
+      if (ac) ac.style.display = "";
 
       const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
       const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
 
-      // 移动端：系统分享直接存相册
+      // 移除遮罩
+      mask.remove();
+
+      // 移动端：系统分享存相册
       if (isMobile && navigator.share && navigator.canShare) {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({ files: [file], title: "学员测评单" });
+            setExporting(false);
             return;
-          } catch {} // 用户取消分享 → 走下载
+          } catch {} // 取消 → 走下载
         }
       }
 
       // 下载
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.download = "学员测评单.png";
-      a.href = url;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (isMobile) {
+        // 手机备选：新窗口打开长图，可长按保存
+        const w = window.open(url, "_blank");
+        if (!w) {
+          const a = document.createElement("a");
+          a.download = "学员测评单.png"; a.href = url;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+      } else {
+        const a = document.createElement("a");
+        a.download = "学员测评单.png"; a.href = url; a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
 
     } catch (e) {
       console.error("导出失败:", e);
+      mask.remove();
       setToastMsg("导出失败，请重试");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } finally {
-      // 恢复样式
-      if (orig) Object.assign(el.style, orig);
+      // 确保遮罩和样式都已恢复
+      if (mask.parentNode) mask.remove();
+      Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
       if (ac) ac.style.display = "";
       setExporting(false);
     }
