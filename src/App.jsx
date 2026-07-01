@@ -144,7 +144,7 @@ export function App() {
     setExporting(true);
 
     try {
-      // ★ 克隆报告内容到 body 外，避开弹窗/遮罩的所有 CSS 干扰
+      // ★ 克隆报告到 body 外，确保捕获完整长图
       const paper = el.querySelector(".report-paper");
       if (!paper) throw new Error("未找到报告内容");
 
@@ -154,82 +154,93 @@ export function App() {
       clone.style.top = "0";
       clone.style.width = "600px";
       clone.style.maxWidth = "600px";
-      clone.style.zIndex = "99999";
-      clone.style.background = "#fdfaf5";
-      clone.style.overflow = "visible";
       clone.style.maxHeight = "none";
+      clone.style.overflow = "visible";
+      clone.style.background = "#fdfaf5";
+      clone.style.zIndex = "99999";
 
-      // 隐藏克隆里的操作按钮（可能被复制进来）
       const cloneActions = clone.querySelector(".report-actions");
       if (cloneActions) cloneActions.style.display = "none";
 
       document.body.appendChild(clone);
 
-      // 等待克隆中的图片加载
+      // 等待所有图片在克隆中加载完毕
       const cloneImgs = clone.querySelectorAll("img");
       await Promise.all(Array.from(cloneImgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
         else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
       })));
-      await new Promise(r => setTimeout(r, 300));
 
-      // 如果 html2canvas 可用就用它，否则回退到直接打开报告页面
-      let blob;
-      if (window.html2canvas) {
-        try {
-          const cv = await window.html2canvas(clone, {
-            backgroundColor: "#fdfaf5",
-            scale: 2,
-            logging: false
-          });
-          blob = await new Promise((resolve, reject) => {
-            cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
-          });
-        } catch {
-          // html2canvas 失败 → 回退：用 data URL
-          try {
-            const cv2 = await window.html2canvas(clone, { backgroundColor: "#fdfaf5", scale: 1, logging: false });
-            const dataUrl = cv2.toDataURL("image/png");
-            const byteStr = atob(dataUrl.split(",")[1]);
-            const ab = new ArrayBuffer(byteStr.length);
-            const ua = new Uint8Array(ab);
-            for (let i = 0; i < byteStr.length; i++) ua[i] = byteStr.charCodeAt(i);
-            blob = new Blob([ab], { type: "image/png" });
-          } catch {
-            throw new Error("截图失败");
-          }
-        }
-      } else {
-        throw new Error("截图组件未加载");
+      await new Promise(r => setTimeout(r, 500));
+
+      // html2canvas 捕获完整长图
+      let cv;
+      try {
+        cv = await window.html2canvas(clone, {
+          backgroundColor: "#fdfaf5",
+          scale: 2,
+          windowHeight: clone.scrollHeight,
+          height: clone.scrollHeight,
+          logging: false
+        });
+      } catch {
+        cv = await window.html2canvas(clone, {
+          backgroundColor: "#fdfaf5",
+          scale: 1,
+          windowHeight: clone.scrollHeight,
+          height: clone.scrollHeight,
+          logging: false
+        });
       }
 
       // 清理克隆
       document.body.removeChild(clone);
 
-      const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
-      const url = URL.createObjectURL(blob);
-
-      // 移动端：新窗口打开 → 长按保存
-      if (isMobile) {
-        const w = window.open(url, "_blank");
-        if (!w) {
-          const a = document.createElement("a");
-          a.href = url; a.download = "学员测评单.png";
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
-      } else {
-        const a = document.createElement("a");
-        a.download = "学员测评单.png"; a.href = url; a.click();
+      // 生成 blob
+      let blob;
+      try {
+        blob = await new Promise((resolve, reject) => {
+          cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
+        });
+      } catch {
+        const dataUrl = cv.toDataURL("image/png");
+        const byteStr = atob(dataUrl.split(",")[1]);
+        const ab = new ArrayBuffer(byteStr.length);
+        const ua = new Uint8Array(ab);
+        for (let i = 0; i < byteStr.length; i++) ua[i] = byteStr.charCodeAt(i);
+        blob = new Blob([ab], { type: "image/png" });
       }
+
+      const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
+
+      // 移动端：系统分享 → 直接存相册
+      if (isMobile && navigator.share && navigator.canShare) {
+        const file = new File([blob], "学员测评单.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: "学员测评单" });
+            return;
+          } catch {
+            // 用户取消分享 → 走下载通道
+          }
+        }
+      }
+
+      // 直接下载
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.download = "学员测评单.png";
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
 
     } catch (e) {
       console.error("导出失败:", e);
-      // 兜底：关闭弹窗让用户直接截图
-      setToastMsg("请直接截图保存");
+      setToastMsg("导出失败，请重试");
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
-      // 移除可能残留的克隆
+      setTimeout(() => setShowToast(false), 2500);
       try {
         const leftover = document.body.querySelector('[style*="left: -9999px"]');
         if (leftover?.classList?.contains("report-paper")) leftover.remove();
