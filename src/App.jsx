@@ -148,68 +148,39 @@ export function App() {
     }
 
     setExporting(true);
-    const imgBackup = [];
 
     try {
-      // 第一步：把外部图片转成 data URL（只改 src 值，不影响视觉）
+      // 等待图片加载完成
       const imgs = el.querySelectorAll("img");
-      for (const img of imgs) {
-        if (img.src && !img.src.startsWith("data:")) {
-          try {
-            const b = await fetch(img.src).then(r => r.blob());
-            const dataUrl = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(b);
-            });
-            imgBackup.push({ img, oldSrc: img.src });
-            img.src = dataUrl;
-          } catch { /* 转换失败不阻塞 */ }
-        }
-      }
-
-      // 等待图片就绪
-      await Promise.all(Array.from(el.querySelectorAll("img")).map(i => new Promise(r => {
+      await Promise.all(Array.from(imgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
         else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
       })));
 
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 200));
 
+      // 不修改页面 DOM，靠 scale 提分辨率。手机 scale=2，桌面 scale=3
       const isMobile = window.innerWidth < 860;
-      const scale = isMobile ? 1 : 2;
+      const scale = isMobile ? 2 : 3;
 
-      // ★ 核心：所有布局修改都在 onclone 里操作克隆文档，不动用户看到的页面
       const cv = await window.html2canvas(el, {
-        scale, useCORS: true, allowTaint: false,
+        scale,
+        useCORS: true,
+        allowTaint: true,
         backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight, height: el.scrollHeight,
-        onclone: function(clonedDoc) {
-          // 在克隆文档中找到对应的报告容器
-          const report = clonedDoc.querySelector('[data-report-content]');
-          if (report) {
-            report.style.width = isMobile ? "600px" : "1000px";
-            report.style.maxWidth = isMobile ? "600px" : "1000px";
-            report.style.maxHeight = "none";
-            report.style.overflow = "visible";
-            report.style.background = "#fdfaf5";
-          }
-          // 隐藏克隆文档里的操作按钮
-          const actions = clonedDoc.querySelector(".report-actions");
-          if (actions) actions.style.display = "none";
-        }
+        windowHeight: el.scrollHeight,
+        height: el.scrollHeight,
+        logging: false
       });
 
-      // toBlob / toDataURL 双保险
+      // 尝试 toBlob，失败回退 toDataURL
       let blob;
       try {
         blob = await new Promise((resolve, reject) => {
-          cv.toBlob(b => b ? resolve(b) : reject(new Error("null")), "image/png", 1);
+          cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
         });
       } catch {
-        const r = await fetch(cv.toDataURL("image/png"));
-        blob = await r.blob();
+        blob = await (await fetch(cv.toDataURL("image/png"))).blob();
       }
 
       // 移动端系统分享 → 存相册
@@ -242,8 +213,6 @@ export function App() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } finally {
-      // 恢复图片原始 src
-      imgBackup.forEach(({ img, oldSrc }) => { img.src = oldSrc; });
       setExporting(false);
     }
   }
@@ -350,7 +319,7 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef} data-report-content="1">
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef}>
       {/* 全局样式 + 纸质纹理 */}
       <style>{`
         .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
