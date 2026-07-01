@@ -246,9 +246,6 @@ export function App() {
         <p style={{ fontSize: 14, color: "#9b8c7c", margin: 0 }}>{childName ? `${childName} · ` : ""}{fileName || C.newArtwork} ｜ 年龄：{childAge || "未选择"}</p>
       </div>
 
-      {/* Original Artwork */}
-      {preview && <div style={{ marginBottom: 28 }}><img src={preview} alt="" style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} /></div>}
-
       {/* Teacher Comment */}
       {a.teacherCopy && <div style={{ marginBottom: 24, textAlign: "left", background: "#fdfcf9", borderRadius: 16, padding: "20px 22px", border: "1px solid #f0ebe0" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#E07B39", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 18 }}>📝</span> 老师点评</h3>
@@ -304,7 +301,11 @@ export function App() {
         </div>
       </div>}
 
-      {/* Optimized Image(s) */}
+      {/* Original + Optimized Images */}
+      {preview && <div style={{ marginBottom: 24 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🎨</span> 原画</h3>
+        <img src={preview} alt="" style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }} />
+      </div>}
       {gResults.length > 0 && <div style={{ marginBottom: 24 }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}><span style={{ fontSize: 18 }}>🖼️</span> {C.guideResult}</h3>
         <img src={gResults[0].image} alt="" style={{ maxWidth: "100%", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
