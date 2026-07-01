@@ -140,7 +140,6 @@ export function App() {
     const el = rptRef.current;
     if (!el) return;
 
-    // html2canvas 未加载时提示用户
     if (!window.html2canvas) {
       setToastMsg("导出组件加载中，请稍后再试");
       setShowToast(true);
@@ -150,6 +149,8 @@ export function App() {
 
     setExporting(true);
     let orig = null, ac = null;
+    // 记录被替换过的图片 src，方便恢复
+    const imgBackup = [];
 
     try {
       orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
@@ -163,7 +164,27 @@ export function App() {
       ac = el.querySelector(".report-actions");
       if (ac) ac.style.display = "none";
 
+      // ★ 先把所有外部图片转成 data URL，彻底避免 canvas 被污染
       const imgs = el.querySelectorAll("img");
+      for (const img of imgs) {
+        if (img.src && !img.src.startsWith("data:")) {
+          try {
+            const blob = await fetch(img.src).then(r => r.blob());
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            imgBackup.push({ img, oldSrc: img.src });
+            img.src = dataUrl;
+          } catch {
+            // 转换失败就保持原样，不阻塞流程
+          }
+        }
+      }
+
+      // 等待全部图片加载完成
       await Promise.all(Array.from(imgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
         else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
@@ -171,16 +192,29 @@ export function App() {
 
       await new Promise(r => setTimeout(r, 300));
 
+      // 手机端 scale 降为 1，避免高分屏内存溢出
+      const scale = im ? 1 : 2;
       const cv = await window.html2canvas(el, {
-        scale: 2, useCORS: true, allowTaint: true,
+        scale, useCORS: true, allowTaint: false,
         backgroundColor: "#fdfaf5",
         windowHeight: el.scrollHeight, height: el.scrollHeight
       });
 
-      const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
+      // toBlob 在部分浏览器可能因安全策略失败，回退到 toDataURL
+      let blob;
+      try {
+        blob = await new Promise((resolve, reject) => {
+          cv.toBlob(b => b ? resolve(b) : reject(new Error("toBlob returned null")), "image/png", 1);
+        });
+      } catch {
+        const dataUrl = cv.toDataURL("image/png");
+        const resp = await fetch(dataUrl);
+        blob = await resp.blob();
+      }
+
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-      // 移动端优先使用系统分享（可保存到相册）
+      // 移动端优先系统分享 → 可存相册
       if (isMobile && navigator.share && navigator.canShare) {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
@@ -189,10 +223,9 @@ export function App() {
         }
       }
 
-      // 桌面端 / 不支持分享的设备：传统下载
+      // 回退：生成下载链接
       const url = URL.createObjectURL(blob);
       if (isMobile) {
-        // 移动端备选：新窗口打开图片，长按即可保存
         const w = window.open(url, "_blank");
         if (!w) {
           const a = document.createElement("a");
@@ -211,7 +244,9 @@ export function App() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } finally {
-      // ★ 无论如何都要恢复页面样式，防止页面"跑偏"
+      // 恢复图片原始 src
+      imgBackup.forEach(({ img, oldSrc }) => { img.src = oldSrc; });
+      // 恢复页面样式
       if (orig) {
         Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
       }
