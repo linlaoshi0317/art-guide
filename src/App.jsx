@@ -159,28 +159,37 @@ export function App() {
 
       await new Promise(r => setTimeout(r, 200));
 
-      // 不修改页面 DOM，靠 scale 提分辨率。手机 scale=2，桌面 scale=3
       const isMobile = window.innerWidth < 860;
       const scale = isMobile ? 2 : 3;
 
       const cv = await window.html2canvas(el, {
         scale,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: "#fdfaf5",
         windowHeight: el.scrollHeight,
         height: el.scrollHeight,
         logging: false
       });
 
-      // 尝试 toBlob，失败回退 toDataURL
+      // 三重保险：toBlob → toDataURL+fetch → toDataURL+atob
       let blob;
       try {
         blob = await new Promise((resolve, reject) => {
           cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
         });
       } catch {
-        blob = await (await fetch(cv.toDataURL("image/png"))).blob();
+        try {
+          blob = await (await fetch(cv.toDataURL("image/png"))).blob();
+        } catch {
+          // 最后兜底：手动解码 data URL
+          const dataUrl = cv.toDataURL("image/png");
+          const byteStr = atob(dataUrl.split(",")[1]);
+          const ab = new ArrayBuffer(byteStr.length);
+          const ua = new Uint8Array(ab);
+          for (let i = 0; i < byteStr.length; i++) ua[i] = byteStr.charCodeAt(i);
+          blob = new Blob([ab], { type: "image/png" });
+        }
       }
 
       // 移动端系统分享 → 存相册
