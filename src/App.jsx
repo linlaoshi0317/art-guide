@@ -141,72 +141,75 @@ export function App() {
     const el = rptRef.current;
     if (!el) return;
 
-    if (!window.html2canvas) {
-      setToastMsg("导出组件加载中，请稍后再试");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-      return;
-    }
-
     setExporting(true);
 
     try {
-      // 等待图片加载完成
-      const imgs = el.querySelectorAll("img");
-      await Promise.all(Array.from(imgs).map(i => new Promise(r => {
+      // ★ 克隆报告内容到 body 外，避开弹窗/遮罩的所有 CSS 干扰
+      const paper = el.querySelector(".report-paper");
+      if (!paper) throw new Error("未找到报告内容");
+
+      const clone = paper.cloneNode(true);
+      clone.style.position = "fixed";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.width = "600px";
+      clone.style.maxWidth = "600px";
+      clone.style.zIndex = "99999";
+      clone.style.background = "#fdfaf5";
+      clone.style.overflow = "visible";
+      clone.style.maxHeight = "none";
+
+      // 隐藏克隆里的操作按钮（可能被复制进来）
+      const cloneActions = clone.querySelector(".report-actions");
+      if (cloneActions) cloneActions.style.display = "none";
+
+      document.body.appendChild(clone);
+
+      // 等待克隆中的图片加载
+      const cloneImgs = clone.querySelectorAll("img");
+      await Promise.all(Array.from(cloneImgs).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
         else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
       })));
+      await new Promise(r => setTimeout(r, 300));
 
-      await new Promise(r => setTimeout(r, 200));
-
-      const isMobile = window.innerWidth < 860;
-      const scale = isMobile ? 2 : 3;
-      // 系统分享检测：iOS/Android/鸿蒙都覆盖
-      const canShare = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent)
-        && navigator.share && navigator.canShare;
-
-      const cv = await window.html2canvas(el, {
-        scale,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight,
-        height: el.scrollHeight,
-        logging: false
-      });
-
-      // 三重保险：toBlob → toDataURL+fetch → toDataURL+atob
+      // 如果 html2canvas 可用就用它，否则回退到直接打开报告页面
       let blob;
-      try {
-        blob = await new Promise((resolve, reject) => {
-          cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
-        });
-      } catch {
+      if (window.html2canvas) {
         try {
-          blob = await (await fetch(cv.toDataURL("image/png"))).blob();
+          const cv = await window.html2canvas(clone, {
+            backgroundColor: "#fdfaf5",
+            scale: 2,
+            logging: false
+          });
+          blob = await new Promise((resolve, reject) => {
+            cv.toBlob(b => b ? resolve(b) : reject(new Error("empty")), "image/png", 1);
+          });
         } catch {
-          // 最后兜底：手动解码 data URL
-          const dataUrl = cv.toDataURL("image/png");
-          const byteStr = atob(dataUrl.split(",")[1]);
-          const ab = new ArrayBuffer(byteStr.length);
-          const ua = new Uint8Array(ab);
-          for (let i = 0; i < byteStr.length; i++) ua[i] = byteStr.charCodeAt(i);
-          blob = new Blob([ab], { type: "image/png" });
+          // html2canvas 失败 → 回退：用 data URL
+          try {
+            const cv2 = await window.html2canvas(clone, { backgroundColor: "#fdfaf5", scale: 1, logging: false });
+            const dataUrl = cv2.toDataURL("image/png");
+            const byteStr = atob(dataUrl.split(",")[1]);
+            const ab = new ArrayBuffer(byteStr.length);
+            const ua = new Uint8Array(ab);
+            for (let i = 0; i < byteStr.length; i++) ua[i] = byteStr.charCodeAt(i);
+            blob = new Blob([ab], { type: "image/png" });
+          } catch {
+            throw new Error("截图失败");
+          }
         }
+      } else {
+        throw new Error("截图组件未加载");
       }
 
-      // 系统分享 → 存相册（iOS/Android/鸿蒙均支持）
-      if (canShare) {
-        const file = new File([blob], "学员测评单.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: "学员测评单" });
-          return;
-        }
-      }
+      // 清理克隆
+      document.body.removeChild(clone);
 
-      // 回退下载
+      const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent);
       const url = URL.createObjectURL(blob);
+
+      // 移动端：新窗口打开 → 长按保存
       if (isMobile) {
         const w = window.open(url, "_blank");
         if (!w) {
@@ -218,13 +221,19 @@ export function App() {
         const a = document.createElement("a");
         a.download = "学员测评单.png"; a.href = url; a.click();
       }
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
 
     } catch (e) {
       console.error("导出失败:", e);
-      setToastMsg("导出失败，请重试");
+      // 兜底：关闭弹窗让用户直接截图
+      setToastMsg("请直接截图保存");
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
+      setTimeout(() => setShowToast(false), 2000);
+      // 移除可能残留的克隆
+      try {
+        const leftover = document.body.querySelector('[style*="left: -9999px"]');
+        if (leftover?.classList?.contains("report-paper")) leftover.remove();
+      } catch {}
     } finally {
       setExporting(false);
     }
