@@ -148,73 +148,71 @@ export function App() {
     }
 
     setExporting(true);
-    let orig = null, ac = null;
-    // 记录被替换过的图片 src，方便恢复
     const imgBackup = [];
 
     try {
-      orig = { w: el.style.width, mw: el.style.maxWidth, mh: el.style.maxHeight, ov: el.style.overflow, bg: el.style.background };
-      const im = window.innerWidth < 860;
-      el.style.width = im ? "600px" : "1000px";
-      el.style.maxWidth = im ? "600px" : "1000px";
-      el.style.maxHeight = "none";
-      el.style.overflow = "visible";
-      el.style.background = "#fdfaf5";
-
-      ac = el.querySelector(".report-actions");
-      if (ac) ac.style.display = "none";
-
-      // ★ 先把所有外部图片转成 data URL，彻底避免 canvas 被污染
+      // 第一步：把外部图片转成 data URL（只改 src 值，不影响视觉）
       const imgs = el.querySelectorAll("img");
       for (const img of imgs) {
         if (img.src && !img.src.startsWith("data:")) {
           try {
-            const blob = await fetch(img.src).then(r => r.blob());
+            const b = await fetch(img.src).then(r => r.blob());
             const dataUrl = await new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result);
               reader.onerror = reject;
-              reader.readAsDataURL(blob);
+              reader.readAsDataURL(b);
             });
             imgBackup.push({ img, oldSrc: img.src });
             img.src = dataUrl;
-          } catch {
-            // 转换失败就保持原样，不阻塞流程
-          }
+          } catch { /* 转换失败不阻塞 */ }
         }
       }
 
-      // 等待全部图片加载完成
-      await Promise.all(Array.from(imgs).map(i => new Promise(r => {
+      // 等待图片就绪
+      await Promise.all(Array.from(el.querySelectorAll("img")).map(i => new Promise(r => {
         if (i.complete && i.naturalWidth > 0) r();
         else { i.onload = r; i.onerror = r; setTimeout(r, 5000); }
       })));
 
       await new Promise(r => setTimeout(r, 300));
 
-      // 手机端 scale 降为 1，避免高分屏内存溢出
-      const scale = im ? 1 : 2;
+      const isMobile = window.innerWidth < 860;
+      const scale = isMobile ? 1 : 2;
+
+      // ★ 核心：所有布局修改都在 onclone 里操作克隆文档，不动用户看到的页面
       const cv = await window.html2canvas(el, {
         scale, useCORS: true, allowTaint: false,
         backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight, height: el.scrollHeight
+        windowHeight: el.scrollHeight, height: el.scrollHeight,
+        onclone: function(clonedDoc) {
+          // 在克隆文档中找到对应的报告容器
+          const report = clonedDoc.querySelector('[data-report-content]');
+          if (report) {
+            report.style.width = isMobile ? "600px" : "1000px";
+            report.style.maxWidth = isMobile ? "600px" : "1000px";
+            report.style.maxHeight = "none";
+            report.style.overflow = "visible";
+            report.style.background = "#fdfaf5";
+          }
+          // 隐藏克隆文档里的操作按钮
+          const actions = clonedDoc.querySelector(".report-actions");
+          if (actions) actions.style.display = "none";
+        }
       });
 
-      // toBlob 在部分浏览器可能因安全策略失败，回退到 toDataURL
+      // toBlob / toDataURL 双保险
       let blob;
       try {
         blob = await new Promise((resolve, reject) => {
-          cv.toBlob(b => b ? resolve(b) : reject(new Error("toBlob returned null")), "image/png", 1);
+          cv.toBlob(b => b ? resolve(b) : reject(new Error("null")), "image/png", 1);
         });
       } catch {
-        const dataUrl = cv.toDataURL("image/png");
-        const resp = await fetch(dataUrl);
-        blob = await resp.blob();
+        const r = await fetch(cv.toDataURL("image/png"));
+        blob = await r.blob();
       }
 
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      // 移动端优先系统分享 → 可存相册
+      // 移动端系统分享 → 存相册
       if (isMobile && navigator.share && navigator.canShare) {
         const file = new File([blob], "学员测评单.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
@@ -223,7 +221,7 @@ export function App() {
         }
       }
 
-      // 回退：生成下载链接
+      // 回退下载
       const url = URL.createObjectURL(blob);
       if (isMobile) {
         const w = window.open(url, "_blank");
@@ -246,11 +244,6 @@ export function App() {
     } finally {
       // 恢复图片原始 src
       imgBackup.forEach(({ img, oldSrc }) => { img.src = oldSrc; });
-      // 恢复页面样式
-      if (orig) {
-        Object.assign(el.style, { width: orig.w, maxWidth: orig.mw, maxHeight: orig.mh, overflow: orig.ov, background: orig.bg });
-      }
-      if (ac) ac.style.display = "";
       setExporting(false);
     }
   }
@@ -357,7 +350,7 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef}>
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div style={{ ...st.modalScroll, textAlign: "center" }} ref={rptRef} data-report-content="1">
       {/* 全局样式 + 纸质纹理 */}
       <style>{`
         .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
