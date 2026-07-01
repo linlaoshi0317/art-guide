@@ -1607,7 +1607,7 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
   };
 }
 
-async function generateGuidanceImage(image, fileName, variant, stylePreset = null, talentType = null, note = "") {
+async function generateGuidanceImage(image, fileName, variant, stylePreset = null, talentType = null, note = "", enableColoring = true) {
   const apiKey = API_KEY;
   if (!apiKey) {
     const error = new Error("missing_api_key");
@@ -2593,6 +2593,10 @@ async function handleGenerateGuidanceImage(request, response) {
       typeof body?.note === "string" && body.note.trim()
         ? body.note.trim()
         : "";
+    const enableColoring =
+      typeof body?.enableColoring === "boolean"
+        ? body.enableColoring
+        : true;
 
     if (typeof image !== "string" || !image.startsWith("data:image/")) {
       addCredits(auth.userId, 1);
@@ -2600,7 +2604,7 @@ async function handleGenerateGuidanceImage(request, response) {
       return;
     }
 
-    const result = await generateGuidanceImage(image, fileName, variant, stylePreset, talentType, note);
+    const result = await generateGuidanceImage(image, fileName, variant, stylePreset, talentType, note, enableColoring);
     sendJson(response, 200, {
       image: result.image,
       model: result.model,
