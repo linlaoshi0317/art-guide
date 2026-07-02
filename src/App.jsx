@@ -219,8 +219,8 @@ export function App() {
 
       const buildFallbackReport = async () => {
         const report = analysis || DA;
-        const width = uaMobile ? 900 : 1200;
-        const padding = 56;
+        const width = uaMobile ? 960 : 1240;
+        const padding = uaMobile ? 72 : 84;
         const loadReportImage = async (label, src) => {
           if (!src) return null;
           try {
@@ -242,9 +242,6 @@ export function App() {
         ])).filter(Boolean);
 
         const rows = [
-          C.reportTitle,
-          `姓名：${childName || "未填写"}    年龄：${childAge || "未选择"}`,
-          "",
           "老师点评",
           report.teacherCopy || "暂无老师点评。",
           "",
@@ -278,7 +275,7 @@ export function App() {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         const maxLineWidth = width - padding * 2;
-        const lineHeight = 34;
+        const lineHeight = 40;
         const lines = [];
 
         const pushWrapped = (text, font) => {
@@ -301,48 +298,68 @@ export function App() {
         };
 
         rows.forEach((row, idx) => {
-          const font = idx === 0 ? "700 36px sans-serif" : /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(row) ? "700 25px sans-serif" : "400 24px sans-serif";
+          const font = idx === 0 ? "800 46px sans-serif" : /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(row) ? "800 28px sans-serif" : "400 26px sans-serif";
           pushWrapped(row, font);
         });
 
-        const imageGap = 22;
+        const imageGap = 34;
         const imageColumns = 1;
         const imageBoxWidth = width - padding * 2;
-        const imageLabelHeight = 34;
-        const imageBoxHeight = imageItems.length ? Math.min(560, Math.round(imageBoxWidth * 0.72)) : 0;
+        const imageLabelHeight = 48;
+        const imageBoxHeight = imageItems.length ? Math.min(660, Math.round(imageBoxWidth * 0.74)) : 0;
         const imageRowHeight = imageBoxHeight + imageLabelHeight + imageGap;
-        const imageSectionHeight = imageItems.length ? 50 + imageItems.length * imageRowHeight + 12 : 0;
+        const imageSectionHeight = imageItems.length ? 82 + imageItems.length * imageRowHeight + 24 : 0;
+        const reportHeaderHeight = 162;
 
         canvas.width = width;
-        canvas.height = Math.max(900, padding * 2 + imageSectionHeight + lines.length * lineHeight + 20);
-        ctx.fillStyle = "#fdfaf5";
+        canvas.height = Math.max(1040, padding * 2 + reportHeaderHeight + imageSectionHeight + lines.length * lineHeight + 70);
+        ctx.fillStyle = "#fbf7ef";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#3d2e1f";
         let y = padding;
 
+        ctx.fillStyle = "#b99773";
+        ctx.font = "700 18px sans-serif";
+        ctx.fillText("CHILDREN'S ART ASSESSMENT", padding, y);
+        y += 42;
+        ctx.fillStyle = "#2f2419";
+        ctx.font = "800 46px sans-serif";
+        ctx.fillText(C.reportTitle, padding, y);
+        y += 42;
+        ctx.fillStyle = "#8b745e";
+        ctx.font = "400 22px sans-serif";
+        ctx.fillText(`姓名：${childName || "未填写"}    年龄：${childAge || "未选择"}`, padding, y);
+        y += 38;
+        ctx.fillStyle = "#eadfce";
+        ctx.fillRect(padding, y, width - padding * 2, 2);
+        y += 38;
+
         if (imageItems.length) {
-          ctx.font = "700 25px sans-serif";
+          ctx.font = "800 30px sans-serif";
           ctx.fillStyle = "#E07B39";
-          ctx.fillText("作品图片", padding, y);
-          y += 38;
+          ctx.fillText("作品对照", padding, y);
+          ctx.font = "400 22px sans-serif";
+          ctx.fillStyle = "#8b745e";
+          ctx.fillText("原图在上，优化后在下，便于手机保存后清晰查看。", padding, y + 34);
+          y += 72;
 
           imageItems.forEach(({ label, img }, index) => {
             const col = index % imageColumns;
             const row = Math.floor(index / imageColumns);
             const x = padding + col * (imageBoxWidth + imageGap);
             const boxTop = y + row * imageRowHeight;
-            ctx.font = "700 22px sans-serif";
-            ctx.fillStyle = "#6b5b4b";
+            ctx.font = "800 24px sans-serif";
+            ctx.fillStyle = index === 0 ? "#6b5b4b" : "#E07B39";
             ctx.fillText(label, x, boxTop);
 
             const imageTop = boxTop + imageLabelHeight;
-            ctx.fillStyle = "#fff";
+            ctx.fillStyle = "#ffffff";
             ctx.fillRect(x, imageTop, imageBoxWidth, imageBoxHeight);
-            ctx.strokeStyle = "#eadfce";
+            ctx.strokeStyle = "#e7dac8";
             ctx.lineWidth = 2;
             ctx.strokeRect(x, imageTop, imageBoxWidth, imageBoxHeight);
 
-            const ratio = Math.min(imageBoxWidth / img.width, imageBoxHeight / img.height);
+            const innerPad = 22;
+            const ratio = Math.min((imageBoxWidth - innerPad * 2) / img.width, (imageBoxHeight - innerPad * 2) / img.height);
             const drawWidth = Math.max(1, Math.round(img.width * ratio));
             const drawHeight = Math.max(1, Math.round(img.height * ratio));
             const drawX = x + Math.round((imageBoxWidth - drawWidth) / 2);
@@ -350,14 +367,14 @@ export function App() {
             ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
           });
 
-          y += Math.ceil(imageItems.length / imageColumns) * imageRowHeight + 22;
+          y += Math.ceil(imageItems.length / imageColumns) * imageRowHeight + 42;
         }
 
         lines.forEach(({ text, font }) => {
           ctx.font = font;
           ctx.fillStyle = /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(text) ? "#E07B39" : "#3d2e1f";
           ctx.fillText(text, padding, y);
-          y += text ? lineHeight : Math.round(lineHeight * 0.7);
+          y += text ? lineHeight : Math.round(lineHeight * 0.9);
         });
         return canvasToBlob(canvas);
       };
@@ -374,32 +391,35 @@ export function App() {
 
       if (uaMobile) {
         const overlay = document.createElement("div");
-        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg, rgba(28,22,18,.88), rgba(0,0,0,.82));display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)";
 
         const dialog = document.createElement("div");
-        dialog.style.cssText = "width:min(420px,100%);max-height:92vh;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.28);display:flex;flex-direction:column";
+        dialog.style.cssText = "width:min(450px,100%);max-height:94vh;background:#fffaf2;border-radius:24px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.34);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.55)";
 
         const title = document.createElement("div");
-        title.style.cssText = "padding:14px 16px;border-bottom:1px solid rgba(0,0,0,.06);font-size:15px;font-weight:700;color:#2b2118";
-        title.textContent = "测评单已生成";
+        title.style.cssText = "padding:18px 20px 14px;border-bottom:1px solid rgba(105,76,48,.08);color:#2b2118;background:linear-gradient(180deg,#fffaf2,#fbf4e9)";
+        title.innerHTML = '<div style="font-size:18px;font-weight:800;letter-spacing:-.01em">测评单已生成</div><div style="font-size:12px;color:#9b846d;margin-top:4px;line-height:1.5">长按下方整张图片，保存到照片/相册</div>';
 
         const body = document.createElement("div");
-        body.style.cssText = "padding:12px;background:#fdfaf5;overflow:auto;flex:1;text-align:center";
+        body.style.cssText = "padding:18px;background:linear-gradient(180deg,#f5ecdf,#efe3d2);overflow:auto;flex:1;text-align:center";
 
         const url = await blobToDataUrl(blob);
+        const previewWrap = document.createElement("div");
+        previewWrap.style.cssText = "background:#fffaf3;border-radius:18px;padding:10px;box-shadow:0 16px 42px rgba(81,53,27,.18);border:1px solid rgba(120,86,52,.12)";
         const image = document.createElement("img");
         image.src = url;
         image.alt = "学员测评单";
-        image.style.cssText = "width:100%;height:auto;display:block;border-radius:10px;background:#fdfaf5;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default";
-        body.appendChild(image);
+        image.style.cssText = "width:100%;height:auto;display:block;border-radius:12px;background:#fdfaf5;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default";
+        previewWrap.appendChild(image);
+        body.appendChild(previewWrap);
 
         const hint = document.createElement("p");
-        hint.style.cssText = "margin:10px 0 0;color:#6b5b4b;font-size:13px;line-height:1.6";
-        hint.textContent = "请长按图片，选择保存到照片/相册。也可以点击下方分享按钮。";
+        hint.style.cssText = "margin:14px 2px 0;color:#6b5b4b;font-size:13px;line-height:1.7";
+        hint.textContent = "如果系统弹出菜单，请选择“保存图片”或“添加到照片”。";
         body.appendChild(hint);
 
         const actions = document.createElement("div");
-        actions.style.cssText = "display:flex;gap:10px;padding:12px 14px 14px;background:#fff";
+        actions.style.cssText = "display:flex;gap:10px;padding:14px 16px 18px;background:#fffaf2;border-top:1px solid rgba(105,76,48,.08)";
 
         const closePreview = () => {
           if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
@@ -407,7 +427,7 @@ export function App() {
 
         const closeBtn = document.createElement("button");
         closeBtn.type = "button";
-        closeBtn.style.cssText = "flex:1;border:1px solid #e2d6ca;background:#fff;color:#5c4a3a;border-radius:12px;padding:11px 10px;font-size:14px;font-weight:700";
+        closeBtn.style.cssText = "flex:1;border:1px solid #e2d6ca;background:#fff;color:#5c4a3a;border-radius:14px;padding:12px 10px;font-size:14px;font-weight:800";
         closeBtn.textContent = "关闭";
         closeBtn.onclick = closePreview;
         actions.appendChild(closeBtn);
@@ -421,7 +441,7 @@ export function App() {
         if (canShareFile) {
           const shareBtn = document.createElement("button");
           shareBtn.type = "button";
-          shareBtn.style.cssText = "flex:1;border:0;background:#E07B39;color:#fff;border-radius:12px;padding:11px 10px;font-size:14px;font-weight:700";
+          shareBtn.style.cssText = "flex:1;border:0;background:linear-gradient(135deg,#E07B39,#c85f22);color:#fff;border-radius:14px;padding:12px 10px;font-size:14px;font-weight:800;box-shadow:0 8px 18px rgba(224,123,57,.24)";
           shareBtn.textContent = "分享保存";
           shareBtn.onclick = async () => {
             try {
@@ -569,27 +589,42 @@ export function App() {
     {previewImage && <div style={st.overlay} onClick={() => setPreviewImage(null)}><div style={{ ...st.modal, maxWidth: "90vw", maxHeight: "90vh" }} onClick={e => e.stopPropagation()}><div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 600 }}>{previewImage.title}</span><button onClick={() => setPreviewImage(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button></div>
       <img src={previewImage.src} alt="" style={{ width: "100%", maxHeight: "80vh", objectFit: "contain" }} />
     </div></div>}
-    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={st.modal} onClick={e => e.stopPropagation()}><div id="report-container" style={{ ...st.modalScroll, textAlign: "left" }} ref={rptRef}>
+    {showReport && <div style={st.overlay} onClick={() => setShowReport(false)}><div style={{ ...st.modal, width: "min(720px, calc(100vw - 24px))", maxWidth: 720, maxHeight: "92vh", borderRadius: 22 }} onClick={e => e.stopPropagation()}><div id="report-container" style={{ overflow: "auto", padding: 0, flex: 1, textAlign: "left", background: "#efe3d2" }} ref={rptRef}>
       {/* 全局样式 + 纸质纹理 */}
       <style>{`
-        .report-paper { background: #fdfaf5; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
-        .report-card { background: rgba(255,255,255,0.75); border-radius: 14px; padding: 24px 20px; margin-bottom: 20px; border: 1px solid rgba(180,160,140,0.15); box-shadow: 0 1px 3px rgba(140,110,70,0.06); text-align: left; }
-        .report-h2 { font-size: 17px; font-weight: 700; color: #3d2e1f; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
-        .report-h3 { font-size: 11px; color: #b8a088; font-weight: 700; margin: 0 0 6px; letter-spacing: 0.1em; text-transform: uppercase; }
-        .report-p { font-size: 14px; color: #4a3828; line-height: 1.9; margin: 0 0 12px; }
+        .report-paper { background: #fbf7ef; background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); box-shadow: inset 0 0 0 1px rgba(120,86,52,.08); }
+        .report-card { background: rgba(255,255,255,0.82); border-radius: 20px; padding: 30px 28px; margin-bottom: 26px; border: 1px solid rgba(170,130,88,0.18); box-shadow: 0 12px 32px rgba(92,63,34,0.06); text-align: left; }
+        .report-h2 { font-size: 18px; font-weight: 800; color: #33261b; margin: 0 0 18px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.01em; }
+        .report-h3 { font-size: 11px; color: #a88c70; font-weight: 800; margin: 0 0 8px; letter-spacing: 0.12em; text-transform: uppercase; }
+        .report-p { font-size: 15px; color: #463626; line-height: 2.05; margin: 0 0 14px; }
         .report-p:last-child { margin-bottom: 0; }
-        .report-divider { height: 1px; background: linear-gradient(90deg, transparent, #d4c4b0, transparent); margin: 28px 0; border: none; }
-        .report-img { max-width: 100%; border-radius: 12px; box-shadow: 0 2px 16px rgba(80,50,20,0.1); border: 1px solid rgba(180,160,140,0.15); }
+        .report-divider { height: 1px; background: linear-gradient(90deg, transparent, #cfbda6, transparent); margin: 34px 0; border: none; }
+        .report-img { max-width: 100%; border-radius: 16px; box-shadow: 0 14px 34px rgba(80,50,20,0.12); border: 1px solid rgba(170,130,88,0.18); background: #fff; }
         .report-tag { display: inline-block; background: #faf3e8; color: #b87a4a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; letter-spacing: 0.03em; }
-        .report-highlight { background: linear-gradient(135deg, #fdf6ee, #fef9f3); border-left: 3px solid #E07B39; border-radius: 0 12px 12px 0; padding: 18px 20px; margin-bottom: 20px; text-align: left; }
-        .report-section { margin-bottom: 14px; }
+        .report-highlight { background: linear-gradient(135deg, #fff6ec, #fffaf4); border: 1px solid rgba(224,123,57,.18); border-left: 4px solid #E07B39; border-radius: 20px; padding: 26px 28px; margin-bottom: 26px; text-align: left; box-shadow: 0 12px 30px rgba(224,123,57,.06); }
+        .report-section { margin-bottom: 18px; }
         .report-section:last-child { margin-bottom: 0; }
-        .report-footer { color: #c4b4a0; font-size: 11px; font-style: italic; }
+        .report-footer { color: #a99178; font-size: 12px; line-height: 1.8; }
+        .report-artwork { margin: 0 0 30px; padding: 24px; border-radius: 24px; background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,249,241,.78)); border: 1px solid rgba(170,130,88,.18); box-shadow: 0 16px 44px rgba(92,63,34,.08); }
+        .report-artwork-title { font-size: 12px; color: #E07B39; font-weight: 800; letter-spacing: .12em; margin-bottom: 16px; text-transform: uppercase; }
+        .report-art-card { margin: 0 0 24px; padding: 0; }
+        .report-art-card:last-child { margin-bottom: 0; }
+        .report-art-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px; color: #5f4a37; font-weight: 800; font-size: 14px; }
+        .report-art-label small { color: #a99178; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+        .report-art-image-wrap { background: #fff; border-radius: 18px; padding: 12px; border: 1px solid rgba(170,130,88,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.6); text-align: center; }
+        .report-art-image { max-width: 100%; max-height: 430px; object-fit: contain; display: inline-block; border-radius: 12px; }
+        @media (max-width: 600px) {
+          .report-paper { padding: 34px 22px 30px !important; }
+          .report-card { padding: 24px 20px; border-radius: 18px; }
+          .report-highlight { padding: 22px 20px; border-radius: 18px; }
+          .report-artwork { padding: 18px; border-radius: 20px; }
+          .report-p { font-size: 14px; line-height: 1.95; }
+        }
         @media (min-width: 860px) {
           .report-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         }
       `}</style>
-      <div className="report-paper" style={{ padding: "40px 32px 32px", fontFamily: "'Noto Serif SC', 'PingFang SC', 'Noto Sans SC', serif", color: "#3d2e1f" }}>
+      <div className="report-paper" style={{ padding: "52px 44px 44px", fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif", color: "#3d2e1f" }}>
       {/* Report Header */}
       <div style={{ textAlign: "center", marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid #e8dcc8" }}>
         <div style={{ fontSize: 11, color: "#c4b088", letterSpacing: "0.15em", marginBottom: 8, fontWeight: 600 }}>CHILDREN'S ART ASSESSMENT</div>
@@ -597,10 +632,17 @@ export function App() {
         <p style={{ fontSize: 13, color: "#9b8970", margin: 0, letterSpacing: "0.03em" }}>姓名：{childName || "未填写"}　　年龄：{childAge || "未选择"}</p>
       </div>
 
-      {/* Original Image */}
-      {preview && <div style={{ marginBottom: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🎨 原画</div>
-        <img src={preview} alt="" className="report-img" style={{ maxHeight: 380 }} />
+      {/* Artwork Comparison */}
+      {(preview || gResults.length > 0) && <div className="report-artwork">
+        <div className="report-artwork-title">Artwork Comparison</div>
+        {preview && <figure className="report-art-card">
+          <figcaption className="report-art-label"><span>01 原图</span><small>ORIGINAL</small></figcaption>
+          <div className="report-art-image-wrap"><img src={preview} alt="" className="report-art-image" /></div>
+        </figure>}
+        {gResults.length > 0 && <figure className="report-art-card">
+          <figcaption className="report-art-label"><span>02 优化后</span><small>ENHANCED</small></figcaption>
+          <div className="report-art-image-wrap"><img src={gResults[0].image} alt="" className="report-art-image" /></div>
+        </figure>}
       </div>}
 
       {/* Teacher Comment */}
@@ -661,16 +703,6 @@ export function App() {
       </div>}
 
       <hr className="report-divider" />
-
-      {/* Original + Optimized Images */}
-      {preview && <div style={{ marginBottom: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🎨 原画</div>
-        <img src={preview} alt="" className="report-img" style={{ maxHeight: 380 }} />
-      </div>}
-      {gResults.length > 0 && <div style={{ marginBottom: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#b8a088", fontWeight: 700, marginBottom: 10, letterSpacing: "0.1em" }}>🖼️ {C.guideResult}</div>
-        <img src={gResults[0].image} alt="" className="report-img" />
-      </div>}
 
       {/* Footer */}
       <div style={{ textAlign: "center", paddingTop: 20, borderTop: "1px solid #e8dcc8" }}>
