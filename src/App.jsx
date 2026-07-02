@@ -219,8 +219,8 @@ export function App() {
 
       const buildFallbackReport = async () => {
         const report = analysis || DA;
-        const width = uaMobile ? 960 : 1240;
-        const padding = uaMobile ? 72 : 84;
+        const width = uaMobile ? 900 : 1240;
+        const padding = uaMobile ? 42 : 84;
         const loadReportImage = async (label, src) => {
           if (!src) return null;
           try {
@@ -275,7 +275,7 @@ export function App() {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         const maxLineWidth = width - padding * 2;
-        const lineHeight = 40;
+        const lineHeight = uaMobile ? 46 : 40;
         const lines = [];
 
         const pushWrapped = (text, font) => {
@@ -298,18 +298,19 @@ export function App() {
         };
 
         rows.forEach((row, idx) => {
-          const font = idx === 0 ? "800 46px sans-serif" : /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(row) ? "800 28px sans-serif" : "400 26px sans-serif";
+          const isSectionTitle = /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(row);
+          const font = isSectionTitle ? `${uaMobile ? 900 : 800} ${uaMobile ? 34 : 28}px sans-serif` : `400 ${uaMobile ? 30 : 26}px sans-serif`;
           pushWrapped(row, font);
         });
 
-        const imageGap = 34;
+        const imageGap = uaMobile ? 40 : 34;
         const imageColumns = 1;
         const imageBoxWidth = width - padding * 2;
-        const imageLabelHeight = 48;
-        const imageBoxHeight = imageItems.length ? Math.min(660, Math.round(imageBoxWidth * 0.74)) : 0;
+        const imageLabelHeight = uaMobile ? 54 : 48;
+        const imageBoxHeight = imageItems.length ? Math.min(uaMobile ? 760 : 660, Math.round(imageBoxWidth * (uaMobile ? 0.92 : 0.74))) : 0;
         const imageRowHeight = imageBoxHeight + imageLabelHeight + imageGap;
-        const imageSectionHeight = imageItems.length ? 82 + imageItems.length * imageRowHeight + 24 : 0;
-        const reportHeaderHeight = 162;
+        const imageSectionHeight = imageItems.length ? (uaMobile ? 96 : 82) + imageItems.length * imageRowHeight + (uaMobile ? 32 : 24) : 0;
+        const reportHeaderHeight = uaMobile ? 174 : 162;
 
         canvas.width = width;
         canvas.height = Math.max(1040, padding * 2 + reportHeaderHeight + imageSectionHeight + lines.length * lineHeight + 70);
@@ -318,36 +319,36 @@ export function App() {
         let y = padding;
 
         ctx.fillStyle = "#b99773";
-        ctx.font = "700 18px sans-serif";
+        ctx.font = `700 ${uaMobile ? 20 : 18}px sans-serif`;
         ctx.fillText("CHILDREN'S ART ASSESSMENT", padding, y);
-        y += 42;
+        y += uaMobile ? 46 : 42;
         ctx.fillStyle = "#2f2419";
-        ctx.font = "800 46px sans-serif";
+        ctx.font = `800 ${uaMobile ? 54 : 46}px sans-serif`;
         ctx.fillText(C.reportTitle, padding, y);
-        y += 42;
+        y += uaMobile ? 50 : 42;
         ctx.fillStyle = "#8b745e";
-        ctx.font = "400 22px sans-serif";
+        ctx.font = `400 ${uaMobile ? 26 : 22}px sans-serif`;
         ctx.fillText(`姓名：${childName || "未填写"}    年龄：${childAge || "未选择"}`, padding, y);
-        y += 38;
+        y += uaMobile ? 44 : 38;
         ctx.fillStyle = "#eadfce";
         ctx.fillRect(padding, y, width - padding * 2, 2);
-        y += 38;
+        y += uaMobile ? 44 : 38;
 
         if (imageItems.length) {
-          ctx.font = "800 30px sans-serif";
+          ctx.font = `800 ${uaMobile ? 38 : 30}px sans-serif`;
           ctx.fillStyle = "#E07B39";
           ctx.fillText("作品对照", padding, y);
-          ctx.font = "400 22px sans-serif";
+          ctx.font = `400 ${uaMobile ? 26 : 22}px sans-serif`;
           ctx.fillStyle = "#8b745e";
-          ctx.fillText("原图在上，优化后在下，便于手机保存后清晰查看。", padding, y + 34);
-          y += 72;
+          ctx.fillText("原图在上，优化后在下，保存后不用放大也能清楚查看。", padding, y + (uaMobile ? 40 : 34));
+          y += uaMobile ? 86 : 72;
 
           imageItems.forEach(({ label, img }, index) => {
             const col = index % imageColumns;
             const row = Math.floor(index / imageColumns);
             const x = padding + col * (imageBoxWidth + imageGap);
             const boxTop = y + row * imageRowHeight;
-            ctx.font = "800 24px sans-serif";
+            ctx.font = `800 ${uaMobile ? 30 : 24}px sans-serif`;
             ctx.fillStyle = index === 0 ? "#6b5b4b" : "#E07B39";
             ctx.fillText(label, x, boxTop);
 
@@ -358,7 +359,7 @@ export function App() {
             ctx.lineWidth = 2;
             ctx.strokeRect(x, imageTop, imageBoxWidth, imageBoxHeight);
 
-            const innerPad = 22;
+            const innerPad = uaMobile ? 10 : 22;
             const ratio = Math.min((imageBoxWidth - innerPad * 2) / img.width, (imageBoxHeight - innerPad * 2) / img.height);
             const drawWidth = Math.max(1, Math.round(img.width * ratio));
             const drawHeight = Math.max(1, Math.round(img.height * ratio));
@@ -382,7 +383,7 @@ export function App() {
       let blob;
       let usedFallback = false;
       try {
-        blob = await captureReport();
+        blob = uaMobile ? await buildFallbackReport() : await captureReport();
       } catch (captureError) {
         console.warn("完整测评单截图失败，已切换精简版:", captureError);
         blob = await buildFallbackReport();
@@ -391,21 +392,21 @@ export function App() {
 
       if (uaMobile) {
         const overlay = document.createElement("div");
-        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg, rgba(28,22,18,.88), rgba(0,0,0,.82));display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg, rgba(28,22,18,.88), rgba(0,0,0,.82));display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)";
 
         const dialog = document.createElement("div");
-        dialog.style.cssText = "width:min(450px,100%);max-height:94vh;background:#fffaf2;border-radius:24px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.34);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.55)";
+        dialog.style.cssText = "width:min(480px,100%);max-height:96vh;background:#fffaf2;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.34);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.55)";
 
         const title = document.createElement("div");
         title.style.cssText = "padding:18px 20px 14px;border-bottom:1px solid rgba(105,76,48,.08);color:#2b2118;background:linear-gradient(180deg,#fffaf2,#fbf4e9)";
         title.innerHTML = '<div style="font-size:18px;font-weight:800;letter-spacing:-.01em">测评单已生成</div><div style="font-size:12px;color:#9b846d;margin-top:4px;line-height:1.5">长按下方整张图片，保存到照片/相册</div>';
 
         const body = document.createElement("div");
-        body.style.cssText = "padding:18px;background:linear-gradient(180deg,#f5ecdf,#efe3d2);overflow:auto;flex:1;text-align:center";
+        body.style.cssText = "padding:10px;background:linear-gradient(180deg,#f5ecdf,#efe3d2);overflow:auto;flex:1;text-align:center";
 
         const url = await blobToDataUrl(blob);
         const previewWrap = document.createElement("div");
-        previewWrap.style.cssText = "background:#fffaf3;border-radius:18px;padding:10px;box-shadow:0 16px 42px rgba(81,53,27,.18);border:1px solid rgba(120,86,52,.12)";
+        previewWrap.style.cssText = "background:#fffaf3;border-radius:16px;padding:6px;box-shadow:0 16px 42px rgba(81,53,27,.18);border:1px solid rgba(120,86,52,.12)";
         const image = document.createElement("img");
         image.src = url;
         image.alt = "学员测评单";
