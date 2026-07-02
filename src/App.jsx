@@ -62,7 +62,7 @@ async function API(url, body, timeoutMs = 0) {
     if (!resp.ok) throw new Error(data.message || data.error || "请求失败");
     return data;
   } catch (error) {
-    if (error.name === "AbortError") throw new Error("生成时间较长，已先生成可保存版本");
+    if (error.name === "AbortError") throw new Error("生成时间较长，请重新点一次「一键优化」。");
     throw error;
   } finally {
     if (timer) clearTimeout(timer);
@@ -74,7 +74,6 @@ function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resol
 function RESIZE(dataUrl, tw, th) { if (!tw || !th) return Promise.resolve(dataUrl); return new Promise((resolve) => { const img = new Image(); img.onload = () => { if (img.width === tw && img.height === th) { resolve(dataUrl); return; } const c = document.createElement("canvas"); c.width = tw; c.height = th; const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, tw, th); resolve(c.toDataURL("image/png")); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 // 获取图片尺寸
 function GSZ(dataUrl) { return new Promise((resolve) => { const img = new Image(); img.onload = () => resolve({ w: img.width, h: img.height }); img.onerror = () => resolve(null); img.src = dataUrl; }); }
-function LGF(dataUrl) { return new Promise((resolve) => { const img = new Image(); img.onload = () => { const maxSide = 1280; const ratio = Math.min(1, maxSide / Math.max(img.width, img.height)); const w = Math.max(1, Math.round(img.width * ratio)); const h = Math.max(1, Math.round(img.height * ratio)); const c = document.createElement("canvas"); c.width = w; c.height = h; const ctx = c.getContext("2d"); ctx.fillStyle = "#fffdf8"; ctx.fillRect(0, 0, w, h); ctx.filter = "saturate(1.12) contrast(1.06) brightness(1.03)"; ctx.drawImage(img, 0, 0, w, h); ctx.filter = "none"; ctx.globalCompositeOperation = "soft-light"; ctx.fillStyle = "rgba(224,123,57,0.08)"; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = "source-over"; ctx.strokeStyle = "rgba(92,74,58,0.16)"; ctx.lineWidth = Math.max(2, Math.round(w / 260)); ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth); resolve(c.toDataURL("image/jpeg", 0.92)); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 
 // Styles
 const st = {
@@ -166,7 +165,7 @@ export function App() {
     try {
       const du = await TDU(preview);
       const sp = selStyle.id === "auto" ? null : selStyle;
-      const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }, 38000).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; })));
+      const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }, 150000).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; })));
       if (gSeq.current !== seq) return;
       const ok = results.filter(r => r.status === "fulfilled").map(r => r.value);
       if (ok.length > 0) {
@@ -179,8 +178,8 @@ export function App() {
           setGStatus("error");
           return;
         }
-        const fallbackGuide = { styleName: "\u57fa\u7840\u4f18\u5316\u56fe", styleCategory: "local fallback", reason: "\u7f51\u7edc\u7e41\u5fd9\u65f6\u5148\u751f\u6210\u53ef\u4fdd\u5b58\u7248\u672c" };
-        finish([{ image: await LGF(du), model: "local-fallback", styleGuide: fallbackGuide, variant: vars[0] }]);
+        setGErr(msg);
+        setGStatus("error");
       }
     } catch (e) {
       if (gSeq.current === seq) {
@@ -190,8 +189,8 @@ export function App() {
           setGStatus("error");
           return;
         }
-        const fallbackGuide = { styleName: "\u57fa\u7840\u4f18\u5316\u56fe", styleCategory: "local fallback", reason: "\u672c\u5730\u5feb\u901f\u4f18\u5316" };
-        finish([{ image: await LGF(preview), model: "local-fallback", styleGuide: fallbackGuide, variant: vars[0] }]);
+        setGErr(msg);
+        setGStatus("error");
       }
     }
   }

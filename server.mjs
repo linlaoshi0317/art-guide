@@ -51,7 +51,7 @@ const IMAGE_DETAIL = process.env.OPENAI_IMAGE_DETAIL || "high";
 const DEFAULT_IMAGE_MODELS =
   AI_PROVIDER === "openai"
     ? "gpt-image-1"
-    : "qwen-image-edit-2509,gpt-image-1.5,gpt-image-1,gpt-image-2,flux.1-kontext-pro";
+    : "gpt-image-1.5,gpt-image-1,qwen-image-edit-2509,gpt-image-2,flux.1-kontext-pro";
 const IMAGE_MODELS = (process.env.AI_IMAGE_MODEL || DEFAULT_IMAGE_MODELS)
   .split(",")
   .map((item) => item.trim())
@@ -61,7 +61,7 @@ const IMAGE_SIZES = (process.env.AI_IMAGE_SIZE || "1024x1024,1536x1024,1024x1536
   .map((item) => item.trim())
   .filter(Boolean);
 const AI_JSON_TIMEOUT_MS = Number(process.env.AI_JSON_TIMEOUT_MS || 45000);
-const AI_IMAGE_TIMEOUT_MS = Number(process.env.AI_IMAGE_TIMEOUT_MS || 30000);
+const AI_IMAGE_TIMEOUT_MS = Number(process.env.AI_IMAGE_TIMEOUT_MS || 45000);
 const AI_IMAGE_ATTEMPT_LIMIT = Math.max(1, Number(process.env.AI_IMAGE_ATTEMPT_LIMIT || 3));
 const AI_IMAGE_STYLE_ANALYSIS = process.env.AI_IMAGE_STYLE_ANALYSIS === "true";
 
@@ -940,10 +940,10 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
 
   return [
     "【最高指令 - 必须严格执行】",
-    "根据原画的风格来优化。90%保留原画所有内容。只添加与原画内容强关联的背景元素。场景要丰富但不能偏离主题。",
+    "根据原画的风格来优化。必须保留原画主体、角色、构图和孩子手绘质感，但优化图必须一眼看出明显变化：补全背景、丰富场景、整理层次，并让画面从“未完成草稿/线稿”变成“完整作品”。不要只复制原图、不要只轻微调亮、不要只加边框。",
     "",
     "【色彩策略 - 因材施教，根据原画判断】",
-    "先观察原画：它是彩色画还是黑白线稿？如果是彩色画→优化后保持彩色，色彩风格与原画一致，不要改变原画的配色基调。如果是黑白线稿→可以适当添加柔和色彩，也可以保持线稿风格增强线条层次。绝不把彩色画变成黑白，也不把黑白线稿强行涂满颜色。",
+    "先观察原画：它是彩色画还是黑白线稿？如果是彩色画→优化后保持彩色，色彩风格与原画一致，不要改变原画的配色基调。如果是黑白线稿→必须添加柔和、儿童画感的色彩，并补充与主题匹配的背景和氛围；保留黑色线条，但不能仍然像未上色线稿。绝不把彩色画变成黑白。",
     "",
     "【场景类型强制判断 - 最高优先级】先判断原画主题属于哪类场景，背景必须匹配：",
     "「必定室外」主题（无论原画有没有画背景，必须加室外场景）：",
