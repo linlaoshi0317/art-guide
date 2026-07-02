@@ -219,6 +219,28 @@ export function App() {
 
       const buildFallbackReport = async () => {
         const report = analysis || DA;
+        const width = uaMobile ? 900 : 1200;
+        const padding = 56;
+        const loadReportImage = async (label, src) => {
+          if (!src) return null;
+          try {
+            const safeSrc = src.startsWith("data:image/") ? src : await TDU(src);
+            const img = await new Promise(resolve => {
+              const image = new Image();
+              image.onload = () => resolve(image);
+              image.onerror = () => resolve(null);
+              image.src = safeSrc;
+            });
+            return img ? { label, img } : null;
+          } catch {
+            return null;
+          }
+        };
+        const imageItems = (await Promise.all([
+          loadReportImage(C.original, preview),
+          loadReportImage(C.guideResult, gResults?.[0]?.image),
+        ])).filter(Boolean);
+
         const rows = [
           C.reportTitle,
           `姓名：${childName || "未填写"}    年龄：${childAge || "未选择"}`,
@@ -255,8 +277,6 @@ export function App() {
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        const width = uaMobile ? 900 : 1200;
-        const padding = 56;
         const maxLineWidth = width - padding * 2;
         const lineHeight = 34;
         const lines = [];
@@ -285,12 +305,53 @@ export function App() {
           pushWrapped(row, font);
         });
 
+        const imageGap = 18;
+        const imageColumns = imageItems.length > 1 ? 2 : 1;
+        const imageBoxWidth = Math.floor((width - padding * 2 - imageGap * (imageColumns - 1)) / imageColumns);
+        const imageBoxHeight = imageItems.length ? Math.min(320, Math.round(imageBoxWidth * 0.78)) : 0;
+        const imageRowHeight = imageBoxHeight + 54;
+        const imageSectionHeight = imageItems.length ? 50 + Math.ceil(imageItems.length / imageColumns) * imageRowHeight + 16 : 0;
+
         canvas.width = width;
-        canvas.height = Math.max(900, padding * 2 + lines.length * lineHeight + 20);
+        canvas.height = Math.max(900, padding * 2 + imageSectionHeight + lines.length * lineHeight + 20);
         ctx.fillStyle = "#fdfaf5";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#3d2e1f";
         let y = padding;
+
+        if (imageItems.length) {
+          ctx.font = "700 25px sans-serif";
+          ctx.fillStyle = "#E07B39";
+          ctx.fillText("作品图片", padding, y);
+          y += 38;
+
+          imageItems.forEach(({ label, img }, index) => {
+            const col = index % imageColumns;
+            const row = Math.floor(index / imageColumns);
+            const x = padding + col * (imageBoxWidth + imageGap);
+            const boxTop = y + row * imageRowHeight;
+            ctx.font = "700 22px sans-serif";
+            ctx.fillStyle = "#6b5b4b";
+            ctx.fillText(label, x, boxTop);
+
+            const imageTop = boxTop + 18;
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(x, imageTop, imageBoxWidth, imageBoxHeight);
+            ctx.strokeStyle = "#eadfce";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, imageTop, imageBoxWidth, imageBoxHeight);
+
+            const ratio = Math.min(imageBoxWidth / img.width, imageBoxHeight / img.height);
+            const drawWidth = Math.max(1, Math.round(img.width * ratio));
+            const drawHeight = Math.max(1, Math.round(img.height * ratio));
+            const drawX = x + Math.round((imageBoxWidth - drawWidth) / 2);
+            const drawY = imageTop + Math.round((imageBoxHeight - drawHeight) / 2);
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+          });
+
+          y += Math.ceil(imageItems.length / imageColumns) * imageRowHeight + 22;
+        }
+
         lines.forEach(({ text, font }) => {
           ctx.font = font;
           ctx.fillStyle = /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(text) ? "#E07B39" : "#3d2e1f";
