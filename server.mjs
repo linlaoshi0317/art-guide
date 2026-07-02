@@ -51,7 +51,7 @@ const IMAGE_DETAIL = process.env.OPENAI_IMAGE_DETAIL || "high";
 const DEFAULT_IMAGE_MODELS =
   AI_PROVIDER === "openai"
     ? "gpt-image-1"
-    : "gpt-image-2,gpt-image-1,gpt-image-1.5,qwen-image-edit-2509,flux.1-kontext-pro";
+    : "qwen-image-edit-2509,gpt-image-1.5,gpt-image-1,gpt-image-2,flux.1-kontext-pro";
 const IMAGE_MODELS = (process.env.AI_IMAGE_MODEL || DEFAULT_IMAGE_MODELS)
   .split(",")
   .map((item) => item.trim())
@@ -60,6 +60,10 @@ const IMAGE_SIZES = (process.env.AI_IMAGE_SIZE || "1024x1024,1536x1024,1024x1536
   .split(",")
   .map((item) => item.trim())
   .filter(Boolean);
+const AI_JSON_TIMEOUT_MS = Number(process.env.AI_JSON_TIMEOUT_MS || 45000);
+const AI_IMAGE_TIMEOUT_MS = Number(process.env.AI_IMAGE_TIMEOUT_MS || 30000);
+const AI_IMAGE_ATTEMPT_LIMIT = Math.max(1, Number(process.env.AI_IMAGE_ATTEMPT_LIMIT || 3));
+const AI_IMAGE_STYLE_ANALYSIS = process.env.AI_IMAGE_STYLE_ANALYSIS === "true";
 
 // ── 用户认证 & 数据持久化配置 ──
 const JWT_SECRET = process.env.JWT_SECRET || "lin-art-guide-2024-secret-fixed";
@@ -91,6 +95,17 @@ function writeServerLog(event, details = {}) {
     // Logging should never break generation.
   }
   console.log(line);
+}
+
+function makeTimeoutSignal(timeoutMs) {
+  if (!timeoutMs || timeoutMs <= 0) return undefined;
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return AbortSignal.timeout(timeoutMs);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (typeof timer.unref === "function") timer.unref();
+  return controller.signal;
 }
 
 // ──────────── 数据持久化工具 ────────────
@@ -1004,19 +1019,32 @@ function readBody(request) {
   return new Promise((resolve, reject) => {
     let body = "";
     let size = 0;
+    let settled = false;
+    let tooLarge = false;
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
 
     request.on("data", (chunk) => {
+      if (tooLarge) return;
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        reject(new Error("request_too_large"));
-        request.destroy();
+        tooLarge = true;
+        fail(new Error("request_too_large"));
         return;
       }
       body += chunk;
     });
 
-    request.on("end", () => resolve(body));
-    request.on("error", reject);
+    request.on("end", () => {
+      if (settled) return;
+      settled = true;
+      resolve(body);
+    });
+    request.on("error", fail);
   });
 }
 
@@ -1144,6 +1172,7 @@ async function requestJsonWithFetch(url, payload, apiKey) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
+    signal: makeTimeoutSignal(AI_JSON_TIMEOUT_MS),
     body: JSON.stringify(payload),
   });
 
@@ -1435,7 +1464,7 @@ function requestImageEditWithNodeHttp({ apiKey, fields, file }) {
         path: `${target.pathname}${target.search}`,
         port: target.port || (target.protocol === "http:" ? 80 : 443),
         protocol: target.protocol,
-        timeout: 190000,
+        timeout: AI_IMAGE_TIMEOUT_MS,
       },
       (upstream) => {
         const chunks = [];
@@ -1624,6 +1653,7 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
         "Content-Type": multipart.contentType,
       },
       method: "POST",
+      signal: makeTimeoutSignal(AI_IMAGE_TIMEOUT_MS),
     });
     response = {
       ok: upstream.ok,
@@ -1638,6 +1668,9 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
       model,
       size,
     });
+    if (error.name === "AbortError" || /abort|timeout|timed out/i.test(error.message || "")) {
+      throw error;
+    }
     try {
       response = await requestImageEditWithNodeHttp({ apiKey, fields, file });
     } catch (nativeError) {
@@ -1691,12 +1724,14 @@ async function generateGuidanceImage(image, fileName, variant, stylePreset = nul
 
   let lastError = null;
   const attempts = [];
-  const sizes = IMAGE_SIZES.length ? IMAGE_SIZES : [""];
+  const sizes = [IMAGE_SIZES[0] || ""];
   const styleGuide = stylePreset && typeof stylePreset === "object"
     ? normalizeStyleGuide(stylePreset, variant)
-    : await analyzeStyleWithAI(image, variant);
+    : AI_IMAGE_STYLE_ANALYSIS
+      ? await analyzeStyleWithAI(image, variant)
+      : fallbackAdaptiveStyleGuide(variant);
 
-  for (const model of IMAGE_MODELS) {
+  for (const model of IMAGE_MODELS.slice(0, AI_IMAGE_ATTEMPT_LIMIT)) {
     for (const size of sizes) {
       try {
         return await requestImageEdit({

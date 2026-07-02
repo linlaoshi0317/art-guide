@@ -51,13 +51,30 @@ const DA = {
 
 function sn(v, fb = "") { if (typeof v !== "string") return fb; const t = v.trim(); return (!t || /[�锟]/.test(t)) ? fb : t; }
 function TDU(input) { if (input.startsWith("data:image/")) return Promise.resolve(input); return fetch(input).then(r => { if (!r.ok) throw new Error("load_failed"); return r.blob(); }).then(b => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.onerror = () => reject(new Error("read_failed")); fr.readAsDataURL(b); })); }
-async function API(url, body) { const headers = { "Content-Type": "application/json" }; try { const token = localStorage.getItem("art_token"); if (token) headers["Authorization"] = `Bearer ${token}`; } catch {} const resp = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) }); const data = await resp.json().catch(() => ({})); if (!resp.ok) throw new Error(data.message || data.error || "请求失败"); return data; }
+async function API(url, body, timeoutMs = 0) {
+  const headers = { "Content-Type": "application/json" };
+  try { const token = localStorage.getItem("art_token"); if (token) headers["Authorization"] = `Bearer ${token}`; } catch {}
+  const controller = timeoutMs > 0 ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const resp = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: controller?.signal });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.message || data.error || "请求失败");
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("生成时间较长，已先生成可保存版本");
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 function NA(raw) { if (!raw || typeof raw !== "object") return DA; const pa = raw.psychologyAnalysis || {}, fe = raw.familyEducation || {}, pr = raw.projectionAnalysis || {}, ti = raw.talentInsight || {}, pw = raw.parentWording || {}; return { teacherCopy: sn(raw.teacherCopy, ""), psychologyAnalysis: { emotionState: sn(pa.emotionState), securityLevel: sn(pa.securityLevel), selfCognition: sn(pa.selfCognition), keyEvidence: Array.isArray(pa.keyEvidence) ? pa.keyEvidence.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] }, familyEducation: { parentInterference: sn(fe.parentInterference), strengthPotential: sn(fe.strengthPotential), actionSuggestions: Array.isArray(fe.actionSuggestions) ? fe.actionSuggestions.filter(e => typeof e === "string" && e.trim()).slice(0, 5) : [] }, projectionAnalysis: { attentionProjection: sn(pr.attentionProjection), relationshipProjection: sn(pr.relationshipProjection), needProjection: sn(pr.needProjection) }, talentInsight: { primaryTalent: sn(ti.primaryTalent), evidenceList: Array.isArray(ti.evidenceList) ? ti.evidenceList.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] }, parentWording: { shouldSay: Array.isArray(pw.shouldSay) ? pw.shouldSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [], shouldNotSay: Array.isArray(pw.shouldNotSay) ? pw.shouldNotSay.filter(e => typeof e === "string" && e.trim()).slice(0, 4) : [] } }; }
 function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resolve(dataUrl); return new Promise((resolve) => { const img = new Image(); img.onload = () => { const ir = img.width / img.height, tr = origW / origH; if (Math.abs(ir - tr) < .01) { resolve(dataUrl); return; } const c = document.createElement("canvas"); let cw, ch, sx, sy; if (ir > tr) { ch = img.height; cw = Math.round(img.height * tr); sx = Math.round((img.width - cw) / 2); sy = 0; } else { cw = img.width; ch = Math.round(img.width / tr); sx = 0; sy = Math.round((img.height - ch) / 2); } c.width = cw; c.height = ch; c.getContext("2d").drawImage(img, sx, sy, cw, ch, 0, 0, cw, ch); resolve(c.toDataURL("image/png")); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 // 等比缩放（不裁切），使图片完全容纳在目标尺寸内
 function RESIZE(dataUrl, tw, th) { if (!tw || !th) return Promise.resolve(dataUrl); return new Promise((resolve) => { const img = new Image(); img.onload = () => { if (img.width === tw && img.height === th) { resolve(dataUrl); return; } const c = document.createElement("canvas"); c.width = tw; c.height = th; const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, tw, th); resolve(c.toDataURL("image/png")); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 // 获取图片尺寸
 function GSZ(dataUrl) { return new Promise((resolve) => { const img = new Image(); img.onload = () => resolve({ w: img.width, h: img.height }); img.onerror = () => resolve(null); img.src = dataUrl; }); }
+function LGF(dataUrl) { return new Promise((resolve) => { const img = new Image(); img.onload = () => { const maxSide = 1280; const ratio = Math.min(1, maxSide / Math.max(img.width, img.height)); const w = Math.max(1, Math.round(img.width * ratio)); const h = Math.max(1, Math.round(img.height * ratio)); const c = document.createElement("canvas"); c.width = w; c.height = h; const ctx = c.getContext("2d"); ctx.fillStyle = "#fffdf8"; ctx.fillRect(0, 0, w, h); ctx.filter = "saturate(1.12) contrast(1.06) brightness(1.03)"; ctx.drawImage(img, 0, 0, w, h); ctx.filter = "none"; ctx.globalCompositeOperation = "soft-light"; ctx.fillStyle = "rgba(224,123,57,0.08)"; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = "source-over"; ctx.strokeStyle = "rgba(92,74,58,0.16)"; ctx.lineWidth = Math.max(2, Math.round(w / 260)); ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth); resolve(c.toDataURL("image/jpeg", 0.92)); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 
 // Styles
 const st = {
@@ -87,9 +104,9 @@ const st = {
   divider: { height: 1, background: "#f0ebe0", margin: "8px 0 16px", border: "none" },
   nav: { position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-around", padding: "6px 0 16px", zIndex: 100 },
   navBtn: (active) => ({ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, border: "none", background: "none", color: active ? "#E07B39" : "#b8a99a", fontSize: 10, cursor: "pointer", padding: "6px 16px", fontWeight: active ? 600 : 400, transition: "all 0.2s" }),
-  compareGrid: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, alignItems: "start" },
+  compareGrid: { display: "grid", gridTemplateColumns: "1fr", gap: 14, alignItems: "start" },
   compareLabel: { fontSize: 11, color: "#b8a99a", marginBottom: 6, textAlign: "center", fontWeight: 600, letterSpacing: "0.04em" },
-  dividerIcon: { fontSize: 18, color: "#d4c8b8", padding: "0 4px", alignSelf: "center", marginTop: -12 },
+  dividerIcon: { fontSize: 18, color: "#d4c8b8", padding: "0 4px", alignSelf: "center", textAlign: "center" },
   errorBox: { background: "#fef5f0", color: "#b8542a", padding: 14, borderRadius: 12, marginTop: 12, fontSize: 13, border: "1px solid #fde8d8" },
   recordItem: { display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: "1px solid #f5f1eb", cursor: "pointer", transition: "background 0.15s" },
   thumb: { width: 52, height: 52, borderRadius: 12, objectFit: "cover", background: "#f5f1eb", flexShrink: 0 },
@@ -128,7 +145,56 @@ export function App() {
 
   async function runAnalysis(fSrc, fMeta) { const seq = ++aSeq.current; setStatus("analyzing"); setASrc("pending"); try { const du = await TDU(fSrc); const ai = await API("/api/analyze", { fileName: fMeta.name || C.newArtwork, image: du, childAge, childName }).then(d => NA(d.analysis || d)).catch(() => null); if (aSeq.current !== seq) return; if (ai) { setAnalysis(ai); setASrc("ai"); } else { setASrc("local"); } } catch { if (aSeq.current === seq) setASrc("local"); } finally { if (aSeq.current === seq) setStatus("done"); } }
 
-  async function runGuidance() { if (!preview || gStatus === "generating") return; const vb = ++gVar.current, seq = ++gSeq.current; const vars = Array.from({ length: GBS }, (_, i) => vb + i); gVar.current += GBS - 1; setGStatus("generating"); setGErr(""); setGResults([]); setStyleGuide(null); try { const du = await TDU(preview); const sp = selStyle.id === "auto" ? null : selStyle; const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; }))); if (gSeq.current !== seq) return; const ok = results.filter(r => r.status === "fulfilled").map(r => r.value); if (ok.length > 0) { setGResults(ok); setStyleGuide(ok[0].styleGuide || null); setGStatus("done"); const hasAnalysis = Boolean(analysis.teacherCopy || analysis.psychologyAnalysis?.emotionState || analysis.psychologyAnalysis?.securityLevel || analysis.psychologyAnalysis?.selfCognition || analysis.familyEducation?.parentInterference || analysis.familyEducation?.strengthPotential || analysis.talentInsight?.primaryTalent); if (!hasAnalysis && status !== "analyzing") runAnalysis(preview, cfRef.current); const entryBase = { id: `${Date.now()}`, createdAt: new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }), fileName: fileName || C.newArtwork, preview, generatedImage: ok[0].image, styleName: SDN(ok[0].styleGuide || null) }; setGHistory(h => [entryBase, ...h].slice(0, 50)); } else { const fe = results.find(r => r.status === "rejected"); setGErr(fe?.reason?.message || C.guideFailedHint); setGStatus("error"); } } catch (e) { if (gSeq.current === seq) { setGErr(e.message || C.guideFailedHint); setGStatus("error"); } } }
+  async function runGuidance() {
+    if (!preview || gStatus === "generating") return;
+    const vb = ++gVar.current, seq = ++gSeq.current;
+    const vars = Array.from({ length: GBS }, (_, i) => vb + i);
+    gVar.current += GBS - 1;
+    setGStatus("generating");
+    setGErr("");
+    setGResults([]);
+    setStyleGuide(null);
+    const finish = (ok) => {
+      setGResults(ok);
+      setStyleGuide(ok[0].styleGuide || null);
+      setGStatus("done");
+      const hasAnalysis = Boolean(analysis.teacherCopy || analysis.psychologyAnalysis?.emotionState || analysis.psychologyAnalysis?.securityLevel || analysis.psychologyAnalysis?.selfCognition || analysis.familyEducation?.parentInterference || analysis.familyEducation?.strengthPotential || analysis.talentInsight?.primaryTalent);
+      if (!hasAnalysis && status !== "analyzing") runAnalysis(preview, cfRef.current);
+      const entryBase = { id: `${Date.now()}`, createdAt: new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }), fileName: fileName || C.newArtwork, preview, generatedImage: ok[0].image, styleName: SDN(ok[0].styleGuide || null) };
+      setGHistory(h => [entryBase, ...h].slice(0, 50));
+    };
+    try {
+      const du = await TDU(preview);
+      const sp = selStyle.id === "auto" ? null : selStyle;
+      const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }, 38000).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; })));
+      if (gSeq.current !== seq) return;
+      const ok = results.filter(r => r.status === "fulfilled").map(r => r.value);
+      if (ok.length > 0) {
+        finish(ok);
+      } else {
+        const fe = results.find(r => r.status === "rejected");
+        const msg = fe?.reason?.message || C.guideFailedHint;
+        if (/登录|积分|充值/.test(msg)) {
+          setGErr(msg);
+          setGStatus("error");
+          return;
+        }
+        const fallbackGuide = { styleName: "\u57fa\u7840\u4f18\u5316\u56fe", styleCategory: "local fallback", reason: "\u7f51\u7edc\u7e41\u5fd9\u65f6\u5148\u751f\u6210\u53ef\u4fdd\u5b58\u7248\u672c" };
+        finish([{ image: await LGF(du), model: "local-fallback", styleGuide: fallbackGuide, variant: vars[0] }]);
+      }
+    } catch (e) {
+      if (gSeq.current === seq) {
+        const msg = e.message || C.guideFailedHint;
+        if (/登录|积分|充值/.test(msg)) {
+          setGErr(msg);
+          setGStatus("error");
+          return;
+        }
+        const fallbackGuide = { styleName: "\u57fa\u7840\u4f18\u5316\u56fe", styleCategory: "local fallback", reason: "\u672c\u5730\u5feb\u901f\u4f18\u5316" };
+        finish([{ image: await LGF(preview), model: "local-fallback", styleGuide: fallbackGuide, variant: vars[0] }]);
+      }
+    }
+  }
 
   function handleFile(e) { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const rawSrc = String(r.result); const img = new Image(); img.onload = () => { const MAX = 1024; let w = img.width, h = img.height; if (w > MAX || h > MAX) { const ratio = Math.min(MAX / w, MAX / h); w = Math.round(w * ratio); h = Math.round(h * ratio); } const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h); const src = c.toDataURL("image/jpeg", 0.85); cfRef.current = { name: f.name, src }; setPreview(src); const rawName = f.name.replace(/\.[^.]+$/, "") || C.newArtwork; const cleanName = /^(screenshot|IMG_|mmexport|wx_camera|Screenshot|MicroMsg|com\.|Image_)/.test(rawName) ? C.newArtwork : rawName; setFileName(cleanName); setAnalysis(DA); setStatus("idle"); setASrc("idle"); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); gVar.current = 0; runAnalysis(src, cfRef.current); }; img.src = rawSrc; }; r.readAsDataURL(f); }
   function handleSave() { if (!isDone) return; const rec = { id: `${Date.now()}`, fileName: fileName || C.newArtwork, preview, analysis, savedAt: C.justNow }; setRecords(r => [rec, ...r].slice(0, 50)); setSaved(true); setToastMsg("✅ 已保存到记录"); setShowToast(true); setTimeout(() => { setSaved(false); setShowToast(false); }, 2000); try { fetch("/api/records/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: rec.fileName, preview, analysis }) }).catch(() => {}); } catch {} }
@@ -518,7 +584,7 @@ export function App() {
           <button onClick={runGuidance} disabled={gStatus === "generating" || !preview || !childAge} style={gStatus === "generating" || !preview || !childAge ? st.btnDisabled : st.btnPrimary}>{!childAge && preview ? "请先选择年龄段" : gStatus === "generating" ? <><RefreshCcw size={18} className="spinning" />AI 优化中...</> : <><Sparkles size={18} />{C.guideAction}</>}</button></div>
         {gStatus !== "idle" && <div style={st.card}><div style={st.stepLabel}><span style={st.stepNum}>3</span> 生成结果 {gStatus === "done" ? "✓" : gStatus === "error" ? "✗" : "…"} {sName !== "自动匹配画风" ? `· ${sName}` : ""}</div>
           {gResults.length > 0 ? <>
-            <div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>→</div><div><div style={st.compareLabel}>{C.guideResult}</div><img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /></div></div>
+            <div style={st.compareGrid}><div><div style={st.compareLabel}>{C.original}</div><img src={preview} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: preview, title: C.original })} /></div><div style={st.dividerIcon}>↓</div><div><div style={st.compareLabel}>{C.guideResult}</div><img src={gResults[0].image} alt="" style={{ ...st.img, cursor: "pointer" }} onClick={() => setPreviewImage({ src: gResults[0].image, title: C.guideResult })} /></div></div>
           </> : gStatus === "generating" ? <div style={{ ...st.placeholder, padding: 40 }}>生成中……</div> : <div style={{ ...st.placeholder, padding: 30, fontSize: 13 }}>{C.guideEmpty}</div>}
         </div>}
         {gStatus === "error" && <div style={st.errorBox}>❌ {gErr}<br /><button onClick={runGuidance} style={{ ...st.btnAccent, marginTop: 8 }}>重新生成</button></div>}
