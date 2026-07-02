@@ -63,6 +63,7 @@ async function API(url, body, timeoutMs = 0) {
     return data;
   } catch (error) {
     if (error.name === "AbortError") throw new Error("生成时间较长，请重新点一次「一键优化」。");
+    if (/failed to fetch|networkerror|load failed|fetch/i.test(error.message || "")) throw new Error("网络连接中断，请重新点一次「一键优化」。");
     throw error;
   } finally {
     if (timer) clearTimeout(timer);
@@ -74,6 +75,8 @@ function FIA(dataUrl, origW, origH) { if (!origW || !origH) return Promise.resol
 function RESIZE(dataUrl, tw, th) { if (!tw || !th) return Promise.resolve(dataUrl); return new Promise((resolve) => { const img = new Image(); img.onload = () => { if (img.width === tw && img.height === th) { resolve(dataUrl); return; } const c = document.createElement("canvas"); c.width = tw; c.height = th; const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, tw, th); resolve(c.toDataURL("image/png")); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
 // 获取图片尺寸
 function GSZ(dataUrl) { return new Promise((resolve) => { const img = new Image(); img.onload = () => resolve({ w: img.width, h: img.height }); img.onerror = () => resolve(null); img.src = dataUrl; }); }
+function OPT(dataUrl, maxSide = 860, quality = 0.78) { return new Promise((resolve) => { const img = new Image(); img.onload = () => { const r = Math.min(1, maxSide / Math.max(img.width, img.height)); const w = Math.max(1, Math.round(img.width * r)); const h = Math.max(1, Math.round(img.height * r)); const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h); resolve(c.toDataURL("image/jpeg", quality)); }; img.onerror = () => resolve(dataUrl); img.src = dataUrl; }); }
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Styles
 const st = {
@@ -164,8 +167,23 @@ export function App() {
     };
     try {
       const du = await TDU(preview);
+      const submitImage = await OPT(du);
       const sp = selStyle.id === "auto" ? null : selStyle;
-      const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }, 150000).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; })));
+      const results = await Promise.allSettled(vars.map(async v => {
+        const started = await API("/api/guidance-image/start", { fileName: cfRef.current.name || C.newArtwork, image: submitImage, stylePreset: sp, variant: v, talentType: null, note: gNote }, 30000);
+        if (!started.jobId) throw new Error("生成任务启动失败，请重新点一次。");
+        for (let i = 0; i < 90; i++) {
+          await wait(i === 0 ? 1200 : 2000);
+          const d = await API("/api/guidance-image/status", { jobId: started.jobId }, 15000);
+          if (d.status === "done") {
+            let img = d.image;
+            if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight);
+            return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight };
+          }
+          if (d.status === "error") throw new Error(d.message || d.error || C.guideFailedHint);
+        }
+        throw new Error("生成时间较长，请重新点一次「一键优化」。");
+      }));
       if (gSeq.current !== seq) return;
       const ok = results.filter(r => r.status === "fulfilled").map(r => r.value);
       if (ok.length > 0) {

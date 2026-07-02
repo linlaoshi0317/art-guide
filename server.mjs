@@ -76,6 +76,7 @@ const INVITE_FILE = path.join(DATA_DIR, "invite-codes.json");
 const PAYMENT_SECRET = process.env.PAYMENT_SECRET || "";
 const FREE_MODE = process.env.FREE_MODE === "true"; // 默认收费，需登录
 const ADMIN_KEY = process.env.ADMIN_KEY || "lin2024";
+const guidanceJobs = new Map();
 
 // 初始化 data 目录
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -1007,8 +1008,8 @@ function buildAdaptiveGuidanceImagePrompt(styleGuide, variant = 1, talentType = 
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json; charset=utf-8",
   });
@@ -2664,6 +2665,181 @@ function getFriendlyGenerationMessage(error) {
   return "\u521a\u624d\u6ca1\u6709\u751f\u6210\u6210\u529f\uff0c\u6211\u5df2\u8bb0\u5f55\u539f\u56e0\uff0c\u53ef\u4ee5\u6362\u4e2a\u753b\u98ce\u6216\u7a0d\u540e\u518d\u8bd5\u3002";
 }
 
+function cleanupGuidanceJobs() {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [jobId, job] of guidanceJobs.entries()) {
+    if (!job?.createdAt || job.createdAt < cutoff) guidanceJobs.delete(jobId);
+  }
+}
+
+function normalizeGuidanceRequestBody(body) {
+  const image = body?.image;
+  const fileName =
+    typeof body?.fileName === "string" && body.fileName.trim()
+      ? body.fileName.trim()
+      : "artwork.png";
+  const variant =
+    Number.isFinite(Number(body?.variant)) && Number(body.variant) > 0
+      ? Math.floor(Number(body.variant))
+      : 1;
+  const stylePreset =
+    body?.stylePreset && typeof body.stylePreset === "object"
+      ? body.stylePreset
+      : null;
+  const talentType =
+    typeof body?.talentType === "string" && body.talentType.trim()
+      ? body.talentType.trim()
+      : null;
+  const note =
+    typeof body?.note === "string" && body.note.trim()
+      ? body.note.trim()
+      : "";
+
+  return { fileName, image, note, stylePreset, talentType, variant };
+}
+
+async function handleStartGuidanceImage(request, response) {
+  const auth = getAuthOrGuest(request);
+  if (!auth) {
+    sendJson(response, 401, { error: "请先登录" });
+    return;
+  }
+
+  const creditResult = consumeCredits(auth.userId, 1);
+  if (!creditResult.success) {
+    sendJson(response, 402, { error: "积分不足，请充值", credits: creditResult.credits });
+    return;
+  }
+
+  try {
+    cleanupGuidanceJobs();
+    const rawBody = await readBody(request);
+    const body = JSON.parse(rawBody);
+    const params = normalizeGuidanceRequestBody(body);
+
+    if (typeof params.image !== "string" || !params.image.startsWith("data:image/")) {
+      addCredits(auth.userId, 1);
+      sendJson(response, 400, { error: "invalid_image" });
+      return;
+    }
+
+    const jobId = generateId("g_");
+    guidanceJobs.set(jobId, {
+      createdAt: Date.now(),
+      status: "generating",
+      userId: auth.userId,
+      variant: params.variant,
+    });
+
+    setTimeout(async () => {
+      try {
+        const result = await generateGuidanceImage(
+          params.image,
+          params.fileName,
+          params.variant,
+          params.stylePreset,
+          params.talentType,
+          params.note,
+        );
+        guidanceJobs.set(jobId, {
+          createdAt: Date.now(),
+          result: {
+            image: result.image,
+            model: result.model,
+            originalHeight: result.originalHeight,
+            originalWidth: result.originalWidth,
+            provider: AI_PROVIDER,
+            size: result.size,
+            source: "ai",
+            styleGuide: result.styleGuide,
+            variant: params.variant,
+          },
+          status: "done",
+          userId: auth.userId,
+        });
+      } catch (error) {
+        addCredits(auth.userId, 1);
+        const statusCode = error.statusCode || (error.message === "request_too_large" ? 413 : 500);
+        const isBusy = statusCode === 429 || /busy|saturated|\u9971\u548c|429/i.test(error.message || "");
+        writeServerLog("image_generation_job_failed", {
+          attempts: Array.isArray(error.attempts) ? error.attempts : [],
+          jobId,
+          message: error.message || "image_generation_failed",
+          statusCode,
+        });
+        guidanceJobs.set(jobId, {
+          createdAt: Date.now(),
+          error: error.message || "image_generation_failed",
+          message: isBusy
+            ? "\u56fe\u7247\u751f\u6210\u6a21\u578b\u73b0\u5728\u6bd4\u8f83\u5fd9\uff0c\u8bf7\u7a0d\u540e\u518d\u70b9\u4e00\u6b21\u3002"
+            : getFriendlyGenerationMessage(error),
+          status: "error",
+          userId: auth.userId,
+        });
+      }
+    }, 0);
+
+    sendJson(response, 202, {
+      credits: creditResult.credits,
+      jobId,
+      status: "generating",
+    });
+  } catch (error) {
+    addCredits(auth.userId, 1);
+    const statusCode = error.statusCode || (error.message === "request_too_large" ? 413 : 500);
+    sendJson(response, statusCode, {
+      error: error.message || "image_generation_start_failed",
+      message: getFriendlyGenerationMessage(error),
+    });
+  }
+}
+
+async function handleGuidanceImageStatus(request, response) {
+  const auth = getAuthOrGuest(request);
+  if (!auth) {
+    sendJson(response, 401, { error: "请先登录" });
+    return;
+  }
+
+  try {
+    const rawBody = await readBody(request);
+    const body = JSON.parse(rawBody);
+    const jobId = typeof body?.jobId === "string" ? body.jobId.trim() : "";
+    const job = jobId ? guidanceJobs.get(jobId) : null;
+
+    if (!job) {
+      sendJson(response, 404, { error: "任务已过期，请重新生成。", message: "任务已过期，请重新生成。" });
+      return;
+    }
+
+    if (!auth.isGuest && job.userId !== auth.userId) {
+      sendJson(response, 403, { error: "forbidden" });
+      return;
+    }
+
+    if (job.status === "done") {
+      sendJson(response, 200, {
+        ...job.result,
+        status: "done",
+      });
+      return;
+    }
+
+    if (job.status === "error") {
+      sendJson(response, 200, {
+        error: job.error || "image_generation_failed",
+        message: job.message || "\u521a\u624d\u6ca1\u6709\u751f\u6210\u6210\u529f\uff0c\u8bf7\u91cd\u8bd5\u3002",
+        status: "error",
+      });
+      return;
+    }
+
+    sendJson(response, 200, { status: "generating" });
+  } catch {
+    sendJson(response, 400, { error: "请求格式错误" });
+  }
+}
+
 async function handleGenerateGuidanceImage(request, response) {
   // 认证检查（免费模式自动放行）
   const auth = getAuthOrGuest(request);
@@ -2681,27 +2857,7 @@ async function handleGenerateGuidanceImage(request, response) {
   try {
     const rawBody = await readBody(request);
     const body = JSON.parse(rawBody);
-    const image = body?.image;
-    const fileName =
-      typeof body?.fileName === "string" && body.fileName.trim()
-        ? body.fileName.trim()
-        : "artwork.png";
-    const variant =
-      Number.isFinite(Number(body?.variant)) && Number(body.variant) > 0
-        ? Math.floor(Number(body.variant))
-        : 1;
-    const stylePreset =
-      body?.stylePreset && typeof body.stylePreset === "object"
-        ? body.stylePreset
-        : null;
-    const talentType =
-      typeof body?.talentType === "string" && body.talentType.trim()
-        ? body.talentType.trim()
-        : null;
-    const note =
-      typeof body?.note === "string" && body.note.trim()
-        ? body.note.trim()
-        : "";
+    const { fileName, image, note, stylePreset, talentType, variant } = normalizeGuidanceRequestBody(body);
 
     if (typeof image !== "string" || !image.startsWith("data:image/")) {
       addCredits(auth.userId, 1);
@@ -3029,6 +3185,12 @@ const server = http.createServer((request, response) => {
   // ── AI 分析（原有）──
   if (request.method === "POST" && request.url === "/api/analyze") {
     handleAnalyze(request, response); return;
+  }
+  if (request.method === "POST" && request.url === "/api/guidance-image/start") {
+    handleStartGuidanceImage(request, response); return;
+  }
+  if (request.method === "POST" && request.url === "/api/guidance-image/status") {
+    handleGuidanceImageStatus(request, response); return;
   }
   if (request.method === "POST" && request.url === "/api/generate-guidance-image") {
     handleGenerateGuidanceImage(request, response); return;
