@@ -128,7 +128,7 @@ export function App() {
 
   async function runAnalysis(fSrc, fMeta) { const seq = ++aSeq.current; setStatus("analyzing"); setASrc("pending"); try { const du = await TDU(fSrc); const ai = await API("/api/analyze", { fileName: fMeta.name || C.newArtwork, image: du, childAge, childName }).then(d => NA(d.analysis || d)).catch(() => null); if (aSeq.current !== seq) return; if (ai) { setAnalysis(ai); setASrc("ai"); } else { setASrc("local"); } } catch { if (aSeq.current === seq) setASrc("local"); } finally { if (aSeq.current === seq) setStatus("done"); } }
 
-  async function runGuidance() { if (!preview || gStatus === "generating") return; const vb = ++gVar.current, seq = ++gSeq.current; const vars = Array.from({ length: GBS }, (_, i) => vb + i); gVar.current += GBS - 1; setGStatus("generating"); setGErr(""); setGResults([]); setStyleGuide(null); try { const du = await TDU(preview); const sp = selStyle.id === "auto" ? null : selStyle; const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; }))); if (gSeq.current !== seq) return; const ok = results.filter(r => r.status === "fulfilled").map(r => r.value); if (ok.length > 0) { setGResults(ok); setStyleGuide(ok[0].styleGuide || null); setGStatus("done"); runAnalysis(ok[0].image || preview, cfRef.current); const entryBase = { id: `${Date.now()}`, createdAt: new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }), fileName: fileName || C.newArtwork, preview, generatedImage: ok[0].image, styleName: SDN(ok[0].styleGuide || null) }; setGHistory(h => [entryBase, ...h].slice(0, 50)); } else { const fe = results.find(r => r.status === "rejected"); setGErr(fe?.reason?.message || C.guideFailedHint); setGStatus("error"); } } catch (e) { if (gSeq.current === seq) { setGErr(e.message || C.guideFailedHint); setGStatus("error"); } } }
+  async function runGuidance() { if (!preview || gStatus === "generating") return; const vb = ++gVar.current, seq = ++gSeq.current; const vars = Array.from({ length: GBS }, (_, i) => vb + i); gVar.current += GBS - 1; setGStatus("generating"); setGErr(""); setGResults([]); setStyleGuide(null); try { const du = await TDU(preview); const sp = selStyle.id === "auto" ? null : selStyle; const results = await Promise.allSettled(vars.map(v => API("/api/generate-guidance-image", { fileName: cfRef.current.name || C.newArtwork, image: du, stylePreset: sp, variant: v, talentType: null, note: gNote }).then(async d => { let img = d.image; if (d.originalWidth && d.originalHeight) img = await FIA(img, d.originalWidth, d.originalHeight); return { image: img, model: d.model, styleGuide: d.styleGuide || null, variant: d.variant || v, originalWidth: d.originalWidth, originalHeight: d.originalHeight }; }))); if (gSeq.current !== seq) return; const ok = results.filter(r => r.status === "fulfilled").map(r => r.value); if (ok.length > 0) { setGResults(ok); setStyleGuide(ok[0].styleGuide || null); setGStatus("done"); const hasAnalysis = Boolean(analysis.teacherCopy || analysis.psychologyAnalysis?.emotionState || analysis.psychologyAnalysis?.securityLevel || analysis.psychologyAnalysis?.selfCognition || analysis.familyEducation?.parentInterference || analysis.familyEducation?.strengthPotential || analysis.talentInsight?.primaryTalent); if (!hasAnalysis && status !== "analyzing") runAnalysis(preview, cfRef.current); const entryBase = { id: `${Date.now()}`, createdAt: new Date().toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }), fileName: fileName || C.newArtwork, preview, generatedImage: ok[0].image, styleName: SDN(ok[0].styleGuide || null) }; setGHistory(h => [entryBase, ...h].slice(0, 50)); } else { const fe = results.find(r => r.status === "rejected"); setGErr(fe?.reason?.message || C.guideFailedHint); setGStatus("error"); } } catch (e) { if (gSeq.current === seq) { setGErr(e.message || C.guideFailedHint); setGStatus("error"); } } }
 
   function handleFile(e) { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const rawSrc = String(r.result); const img = new Image(); img.onload = () => { const MAX = 1024; let w = img.width, h = img.height; if (w > MAX || h > MAX) { const ratio = Math.min(MAX / w, MAX / h); w = Math.round(w * ratio); h = Math.round(h * ratio); } const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h); const src = c.toDataURL("image/jpeg", 0.85); cfRef.current = { name: f.name, src }; setPreview(src); const rawName = f.name.replace(/\.[^.]+$/, "") || C.newArtwork; const cleanName = /^(screenshot|IMG_|mmexport|wx_camera|Screenshot|MicroMsg|com\.|Image_)/.test(rawName) ? C.newArtwork : rawName; setFileName(cleanName); setAnalysis(DA); setStatus("idle"); setASrc("idle"); setGResults([]); setGErr(""); setGStatus("idle"); setStyleGuide(null); gVar.current = 0; runAnalysis(src, cfRef.current); }; img.src = rawSrc; }; r.readAsDataURL(f); }
   function handleSave() { if (!isDone) return; const rec = { id: `${Date.now()}`, fileName: fileName || C.newArtwork, preview, analysis, savedAt: C.justNow }; setRecords(r => [rec, ...r].slice(0, 50)); setSaved(true); setToastMsg("✅ 已保存到记录"); setShowToast(true); setTimeout(() => { setSaved(false); setShowToast(false); }, 2000); try { fetch("/api/records/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: rec.fileName, preview, analysis }) }).catch(() => {}); } catch {} }
@@ -305,12 +305,13 @@ export function App() {
           pushWrapped(row, font);
         });
 
-        const imageGap = 18;
-        const imageColumns = imageItems.length > 1 ? 2 : 1;
-        const imageBoxWidth = Math.floor((width - padding * 2 - imageGap * (imageColumns - 1)) / imageColumns);
-        const imageBoxHeight = imageItems.length ? Math.min(320, Math.round(imageBoxWidth * 0.78)) : 0;
-        const imageRowHeight = imageBoxHeight + 54;
-        const imageSectionHeight = imageItems.length ? 50 + Math.ceil(imageItems.length / imageColumns) * imageRowHeight + 16 : 0;
+        const imageGap = 22;
+        const imageColumns = 1;
+        const imageBoxWidth = width - padding * 2;
+        const imageLabelHeight = 34;
+        const imageBoxHeight = imageItems.length ? Math.min(560, Math.round(imageBoxWidth * 0.72)) : 0;
+        const imageRowHeight = imageBoxHeight + imageLabelHeight + imageGap;
+        const imageSectionHeight = imageItems.length ? 50 + imageItems.length * imageRowHeight + 12 : 0;
 
         canvas.width = width;
         canvas.height = Math.max(900, padding * 2 + imageSectionHeight + lines.length * lineHeight + 20);
@@ -334,7 +335,7 @@ export function App() {
             ctx.fillStyle = "#6b5b4b";
             ctx.fillText(label, x, boxTop);
 
-            const imageTop = boxTop + 18;
+            const imageTop = boxTop + imageLabelHeight;
             ctx.fillStyle = "#fff";
             ctx.fillRect(x, imageTop, imageBoxWidth, imageBoxHeight);
             ctx.strokeStyle = "#eadfce";
