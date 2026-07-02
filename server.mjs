@@ -1,5 +1,6 @@
 ﻿import crypto from "node:crypto";
 import http from "node:http";
+import https from "node:https";
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -1410,6 +1411,62 @@ function requestImageEditWithPowerShell({ apiKey, fields, file }) {
   });
 }
 
+function requestImageEditWithNodeHttp({ apiKey, fields, file }) {
+  return new Promise((resolve, reject) => {
+    let target;
+    try {
+      target = new URL(`${AI_BASE_URL}/images/edits`);
+    } catch {
+      reject(new Error("image_native_request_invalid_url"));
+      return;
+    }
+
+    const multipart = buildMultipartBody({ fields, file });
+    const transport = target.protocol === "http:" ? http : https;
+    const request = transport.request(
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": multipart.contentType,
+          "Content-Length": multipart.body.length,
+        },
+        hostname: target.hostname,
+        method: "POST",
+        path: `${target.pathname}${target.search}`,
+        port: target.port || (target.protocol === "http:" ? 80 : 443),
+        protocol: target.protocol,
+        timeout: 190000,
+      },
+      (upstream) => {
+        const chunks = [];
+        upstream.on("data", (chunk) => chunks.push(chunk));
+        upstream.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          let result = {};
+          try {
+            result = text ? JSON.parse(text) : {};
+          } catch {
+            result = { error: text || "image_native_response_parse_failed" };
+          }
+          resolve({
+            ok: upstream.statusCode >= 200 && upstream.statusCode < 300,
+            result,
+            status: upstream.statusCode || 500,
+          });
+        });
+      },
+    );
+
+    request.on("timeout", () => {
+      request.destroy(new Error("image_native_request_timeout"));
+    });
+    request.on("error", (error) => {
+      reject(error);
+    });
+    request.end(multipart.body);
+  });
+}
+
 function getImageDimensions(buffer) {
   try {
     // PNG: width at offset 16, height at offset 20 (4 bytes each, big-endian)
@@ -1581,7 +1638,21 @@ async function requestImageEdit({ apiKey, fileName, image, model, size, styleGui
       model,
       size,
     });
-    response = await requestImageEditWithPowerShell({ apiKey, fields, file });
+    try {
+      response = await requestImageEditWithNodeHttp({ apiKey, fields, file });
+    } catch (nativeError) {
+      writeServerLog("image_native_transport_failed", {
+        cause: nativeError.cause?.message || "",
+        code: nativeError.cause?.code || "",
+        message: nativeError.message || "native_request_failed",
+        model,
+        size,
+      });
+      if (process.platform !== "win32") {
+        throw nativeError;
+      }
+      response = await requestImageEditWithPowerShell({ apiKey, fields, file });
+    }
   }
 
   if (!response.ok) {
