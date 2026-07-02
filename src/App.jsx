@@ -157,35 +157,158 @@ export function App() {
       const isMobile = window.innerWidth < 860;
       const uaMobile = /iPhone|iPad|iPod|Android|HarmonyOS|OpenHarmony/i.test(navigator.userAgent) || isMobile;
 
-      // ★ onclone：在克隆文档里改样式，用户屏幕完全不碰
-      const cv = await window.html2canvas(el, {
-        scale: uaMobile ? 1.25 : 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#fdfaf5",
-        windowHeight: el.scrollHeight,
-        height: el.scrollHeight,
-        imageTimeout: 15000,
-        onclone: function(clonedDoc) {
-          const report = clonedDoc.getElementById("report-container");
-          if (report) {
-            report.style.width = isMobile ? "600px" : "1000px";
-            report.style.maxWidth = isMobile ? "600px" : "1000px";
-            report.style.maxHeight = "none";
-            report.style.overflow = "visible";
-            report.style.background = "#fdfaf5";
-            report.style.textAlign = "left";
+      const fileName = "学员测评单.png";
+      const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
+        if (canvas.toBlob) {
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error("empty_blob")), "image/png", 1);
+        } else {
+          try {
+            fetch(canvas.toDataURL("image/png")).then(r => r.blob()).then(resolve, reject);
+          } catch (err) {
+            reject(err);
           }
-          const actions = clonedDoc.querySelector(".report-actions");
-          if (actions) actions.style.display = "none";
         }
       });
 
-      const blob = await new Promise(r => cv.toBlob(r, "image/png", 1));
-      if (!blob) throw new Error("empty_blob");
+      const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("preview_read_failed"));
+        reader.readAsDataURL(blob);
+      });
 
-      const fileName = "学员测评单.png";
-      const url = URL.createObjectURL(blob);
+      const captureReport = async () => {
+        const scales = uaMobile ? [0.9, 0.7, 0.55] : [2, 1.25, 1];
+        let lastError = null;
+        for (const scale of scales) {
+          try {
+            const cv = await window.html2canvas(el, {
+              scale,
+              useCORS: true,
+              allowTaint: false,
+              backgroundColor: "#fdfaf5",
+              windowHeight: el.scrollHeight,
+              height: el.scrollHeight,
+              imageTimeout: 15000,
+              logging: false,
+              onclone: function(clonedDoc) {
+                const report = clonedDoc.getElementById("report-container");
+                if (report) {
+                  report.style.width = isMobile ? "600px" : "1000px";
+                  report.style.maxWidth = isMobile ? "600px" : "1000px";
+                  report.style.maxHeight = "none";
+                  report.style.overflow = "visible";
+                  report.style.background = "#fdfaf5";
+                  report.style.textAlign = "left";
+                }
+                clonedDoc.querySelectorAll("img").forEach(img => {
+                  img.style.maxWidth = "100%";
+                  img.style.height = "auto";
+                });
+                const actions = clonedDoc.querySelector(".report-actions");
+                if (actions) actions.style.display = "none";
+              }
+            });
+            return await canvasToBlob(cv);
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        throw lastError || new Error("capture_failed");
+      };
+
+      const buildFallbackReport = async () => {
+        const report = analysis || DA;
+        const rows = [
+          C.reportTitle,
+          `姓名：${childName || "未填写"}    年龄：${childAge || "未选择"}`,
+          "",
+          "老师点评",
+          report.teacherCopy || "暂无老师点评。",
+          "",
+          "心理分析",
+          report.psychologyAnalysis?.emotionState ? `情绪状态：${report.psychologyAnalysis.emotionState}` : "",
+          report.psychologyAnalysis?.securityLevel ? `安全感：${report.psychologyAnalysis.securityLevel}` : "",
+          report.psychologyAnalysis?.selfCognition ? `自我认知：${report.psychologyAnalysis.selfCognition}` : "",
+          ...(report.psychologyAnalysis?.keyEvidence || []).map(v => `证据：${v}`),
+          "",
+          "家庭教育分析",
+          report.familyEducation?.parentInterference ? `可能的干扰：${report.familyEducation.parentInterference}` : "",
+          report.familyEducation?.strengthPotential ? `优势潜能：${report.familyEducation.strengthPotential}` : "",
+          ...(report.familyEducation?.actionSuggestions || []).map((v, i) => `建议${i + 1}：${v}`),
+          "",
+          "心理投射分析",
+          report.projectionAnalysis?.attentionProjection ? `注意力投射：${report.projectionAnalysis.attentionProjection}` : "",
+          report.projectionAnalysis?.relationshipProjection ? `关系投射：${report.projectionAnalysis.relationshipProjection}` : "",
+          report.projectionAnalysis?.needProjection ? `需求投射：${report.projectionAnalysis.needProjection}` : "",
+          "",
+          "天赋识别",
+          report.talentInsight?.primaryTalent || "",
+          ...(report.talentInsight?.evidenceList || []).map(v => `画面证据：${v}`),
+          "",
+          "家长引导话术",
+          ...(report.parentWording?.shouldSay || []).map(v => `建议这样说：“${v}”`),
+          ...(report.parentWording?.shouldNotSay || []).map(v => `避免这样说：“${v}”`),
+          "",
+          C.strengthClosing,
+        ].filter(v => v !== "");
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const width = uaMobile ? 900 : 1200;
+        const padding = 56;
+        const maxLineWidth = width - padding * 2;
+        const lineHeight = 34;
+        const lines = [];
+
+        const pushWrapped = (text, font) => {
+          ctx.font = font;
+          if (!text) {
+            lines.push({ text: "", font });
+            return;
+          }
+          let line = "";
+          for (const ch of String(text)) {
+            const next = line + ch;
+            if (ctx.measureText(next).width > maxLineWidth && line) {
+              lines.push({ text: line, font });
+              line = ch;
+            } else {
+              line = next;
+            }
+          }
+          lines.push({ text: line, font });
+        };
+
+        rows.forEach((row, idx) => {
+          const font = idx === 0 ? "700 36px sans-serif" : /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(row) ? "700 25px sans-serif" : "400 24px sans-serif";
+          pushWrapped(row, font);
+        });
+
+        canvas.width = width;
+        canvas.height = Math.max(900, padding * 2 + lines.length * lineHeight + 20);
+        ctx.fillStyle = "#fdfaf5";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#3d2e1f";
+        let y = padding;
+        lines.forEach(({ text, font }) => {
+          ctx.font = font;
+          ctx.fillStyle = /^(老师点评|心理分析|家庭教育分析|心理投射分析|天赋识别|家长引导话术)$/.test(text) ? "#E07B39" : "#3d2e1f";
+          ctx.fillText(text, padding, y);
+          y += text ? lineHeight : Math.round(lineHeight * 0.7);
+        });
+        return canvasToBlob(canvas);
+      };
+
+      let blob;
+      let usedFallback = false;
+      try {
+        blob = await captureReport();
+      } catch (captureError) {
+        console.warn("完整测评单截图失败，已切换精简版:", captureError);
+        blob = await buildFallbackReport();
+        usedFallback = true;
+      }
 
       if (uaMobile) {
         const overlay = document.createElement("div");
@@ -201,6 +324,7 @@ export function App() {
         const body = document.createElement("div");
         body.style.cssText = "padding:12px;background:#fdfaf5;overflow:auto;flex:1;text-align:center";
 
+        const url = await blobToDataUrl(blob);
         const image = document.createElement("img");
         image.src = url;
         image.alt = "学员测评单";
@@ -217,7 +341,6 @@ export function App() {
 
         const closePreview = () => {
           if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-          URL.revokeObjectURL(url);
         };
 
         const closeBtn = document.createElement("button");
@@ -256,12 +379,13 @@ export function App() {
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
-        setToastMsg("已生成图片，长按保存到相册");
+        setToastMsg(usedFallback ? "已生成精简版图片，长按保存到相册" : "已生成图片，长按保存到相册");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2500);
         return;
       }
 
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.download = fileName;
       a.href = url;
